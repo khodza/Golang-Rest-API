@@ -1,0 +1,10 @@
+# Dependency directories
+/vendor/
+/go.sum
+
+
+.vscode/
+
+# Sensitive information
+.env
+*.env
