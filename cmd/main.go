@@ -29,6 +29,9 @@ func main() {
 		case "users":
 			userHandler := handler.(*handlers.UserHandler)
 			routers.SetupUserRouter(routeGroup, userHandler)
+		case "products":
+			productHandler := handler.(*handlers.ProductHandler)
+			routers.SetupProductRouter(routeGroup, productHandler)
 		}
 
 	}

@@ -14,6 +14,9 @@ migrate-up:
 migrate-up-single:
 	migrate -path ./internal/db/migrations -database $(POSTGRES_URL) up $(file)
 
+migrate-down-single:
+	migrate -path ./internal/db/migrations -database $(POSTGRES_URL) down $(file)
+
 migrate-change-version:
 	migrate -path ./internal/db/migrations -database $(POSTGRES_URL) force $(v)
 compose-up:

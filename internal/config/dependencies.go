@@ -10,18 +10,23 @@ import (
 func InitDependencies() map[string]interface{} {
 	// INITIALIZE REPOSITORIES
 	userRepository := repositories.NewUserRepository(GetDB())
+	productRepository := repositories.NewProductRepository(GetDB())
 
 	//INITIALIZE VALIDATORS
 	userValidator := validators.NewUserValidator()
+	productValidator := validators.NewProductValidator()
 
 	// INITIALIZE SERVICES
 	userService := services.NewUserService(*userRepository, *userValidator)
+	productService := services.NewProductService(*productRepository, *productValidator)
 
 	// INITIALIZE HANDLERS
 	userHandler := handlers.NewUserHandler(*userService)
+	productHandler := handlers.NewProductHandler(*productService)
 
 	handlersMap := map[string]interface{}{
-		"users": userHandler,
+		"users":    userHandler,
+		"products": productHandler,
 	}
 
 	return handlersMap

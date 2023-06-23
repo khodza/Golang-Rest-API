@@ -76,6 +76,18 @@ func (r *UserRepository) UpdateUser(userID int, user models.User) (models.User, 
 	// Remove the trailing comma and space from the update query
 	updateQuery = strings.TrimSuffix(updateQuery, ",")
 
+	if len(params) == 0 {
+		// Retrieve the updated user from the database
+		var updatedUser models.User
+		getQuery := "SELECT * FROM users WHERE id = $1"
+		err := r.db.Get(&updatedUser, getQuery, userID)
+		if err != nil {
+			return models.User{}, err
+		}
+
+		return updatedUser, nil
+	}
+
 	updateQuery += fmt.Sprintf(" WHERE id = $%d", paramCount)
 	params = append(params, userID)
 
