@@ -23,3 +23,5 @@ The above commands will set up the necessary dependencies, run any required migr
 5. Open your web browser and visit `http://localhost:8080` to access the application.
 
 Please note that if you encounter any issues during the setup process, make sure to check the project documentation or seek assistance from the project maintainers.
+
+API docs: https://documenter.getpostman.com/view/22439880/2s93z6ejPQ
