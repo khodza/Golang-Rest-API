@@ -2,7 +2,6 @@ package config
 
 import (
 	"fmt"
-	"log"
 
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
@@ -10,7 +9,7 @@ import (
 
 var db *sqlx.DB
 
-func InitDataBase() {
+func InitDataBase() error {
 	conString := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
 		GetEnv("POSTGRES_HOST", "localhost"),
 		GetEnv("POSTGRES_PORT", "5432"),
@@ -22,15 +21,15 @@ func InitDataBase() {
 
 	db, err = sqlx.Open("postgres", conString)
 	if err != nil {
-		log.Fatalf("Failed to connect to the database: %v", err)
+		return err
 	}
 	err = db.Ping()
 
 	if err != nil {
-		log.Fatalf("Failed to ping the database: %v", err)
+		return err
 	}
 
-	log.Println("Connected to the database")
+	return nil
 }
 
 func GetDB() *sqlx.DB {

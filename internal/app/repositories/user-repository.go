@@ -29,9 +29,9 @@ func (r *UserRepository) GetUsers() ([]models.User, error) {
 }
 
 func (r *UserRepository) CreateUser(user models.User) (models.User, error) {
-	query := "INSERT INTO users (first_name, last_name, email) VALUES ($1, $2, $3) RETURNING id, first_name, last_name, email"
+	query := "INSERT INTO users (username, email) VALUES ($1, $2) RETURNING id, username, email"
 	var createdUser models.User
-	err := r.db.Get(&createdUser, query, user.FirstName, user.LastName, user.Email)
+	err := r.db.Get(&createdUser, query, user.Username, user.Email)
 	if err != nil {
 		return models.User{}, err
 	}
@@ -55,15 +55,9 @@ func (r *UserRepository) UpdateUser(userID int, user models.User) (models.User, 
 	params := []interface{}{}
 	paramCount := 1
 
-	if user.FirstName != "" {
-		updateQuery += fmt.Sprintf(" first_name = $%d,", paramCount)
-		params = append(params, user.FirstName)
-		paramCount++
-	}
-
-	if user.LastName != "" {
-		updateQuery += fmt.Sprintf(" last_name = $%d,", paramCount)
-		params = append(params, user.LastName)
+	if user.Username != "" {
+		updateQuery += fmt.Sprintf(" username = $%d,", paramCount)
+		params = append(params, user.Username)
 		paramCount++
 	}
 
@@ -72,6 +66,9 @@ func (r *UserRepository) UpdateUser(userID int, user models.User) (models.User, 
 		params = append(params, user.Email)
 		paramCount++
 	}
+
+	// Add updated_at column update
+	updateQuery += " updated_at = CURRENT_TIMESTAMP,"
 
 	// Remove the trailing comma and space from the update query
 	updateQuery = strings.TrimSuffix(updateQuery, ",")

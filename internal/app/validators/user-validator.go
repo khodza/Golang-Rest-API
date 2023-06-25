@@ -17,7 +17,7 @@ func NewUserValidator() *UserValidator {
 	}
 }
 
-func (v *UserValidator) ValidateUser(user *models.User) error {
+func (v *UserValidator) ValidateUserCreate(user *models.User) error {
 	err := v.validate.Struct(user)
 	if err != nil {
 		var validationErrors []string
@@ -26,6 +26,18 @@ func (v *UserValidator) ValidateUser(user *models.User) error {
 		}
 
 		return fmt.Errorf("validation failed: %v", validationErrors)
+	}
+
+	return nil
+}
+
+func (v *UserValidator) ValidateUserUpdate(user *models.User) error {
+	if user.Email == "" {
+		return nil
+	}
+	err := v.validate.Var(user.Email, "email")
+	if err != nil {
+		return fmt.Errorf("validation failed: %s is %s", "email", err.Error())
 	}
 
 	return nil

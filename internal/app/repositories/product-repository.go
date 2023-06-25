@@ -29,9 +29,9 @@ func (r *ProductRepository) GetProducts() ([]models.Product, error) {
 }
 
 func (r *ProductRepository) CreateProduct(product models.Product) (models.Product, error) {
-	query := "INSERT INTO products (name, barcode, supply_price, retail_price) VALUES ($1, $2, $3, $4) RETURNING id, name, barcode, supply_price, retail_price"
+	query := "INSERT INTO products (name, barcode, supply_price, retail_price, description, image_url) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id, name, barcode, supply_price, retail_price, description, image_url"
 	var createdProduct models.Product
-	err := r.db.Get(&createdProduct, query, product.Name, product.Barcode, product.SupplyPrice, product.RetailPrice)
+	err := r.db.Get(&createdProduct, query, product.Name, product.Barcode, product.SupplyPrice, product.RetailPrice, product.Description, product.Image)
 	if err != nil {
 		return models.Product{}, err
 	}
@@ -77,6 +77,18 @@ func (r *ProductRepository) UpdateProduct(productID int, product models.Product)
 		paramCount++
 	}
 
+	if product.Description != "" {
+		updateQuery += fmt.Sprintf(" description = $%d", paramCount)
+		params = append(params, product.Description)
+		paramCount++
+	}
+
+	if product.Image != "" {
+		updateQuery += fmt.Sprintf(" image_url = $%d", paramCount)
+		params = append(params, product.Image)
+		paramCount++
+	}
+
 	if len(params) == 0 {
 		var updatedProduct models.Product
 		getQuery := "SELECT * FROM products WHERE id = $1"
@@ -88,7 +100,11 @@ func (r *ProductRepository) UpdateProduct(productID int, product models.Product)
 		return updatedProduct, nil
 	}
 
+	// Add updated_at column update
+	updateQuery += " updated_at = CURRENT_TIMESTAMP,"
+
 	updateQuery = strings.TrimSuffix(updateQuery, ",")
+
 	updateQuery += fmt.Sprintf(" WHERE id = $%d", paramCount)
 	params = append(params, productID)
 

@@ -43,7 +43,7 @@ func (s *UserService) GetUsers() ([]models.User, CustomError) {
 }
 
 func (s *UserService) CreateUser(user models.User) (models.User, CustomError) {
-	if err := s.validator.ValidateUser(&user); err != nil {
+	if err := s.validator.ValidateUserCreate(&user); err != nil {
 		// Return a validation error with a nice status code
 		return models.User{}, CustomError{
 			StatusCode: http.StatusBadRequest,
@@ -96,7 +96,7 @@ func (s *UserService) GetUser(userID int) (models.User, CustomError) {
 }
 
 func (s *UserService) UpdateUser(userID int, user models.User) (models.User, CustomError) {
-	if err := s.validator.ValidateUser(&user); err != nil {
+	if err := s.validator.ValidateUserUpdate(&user); err != nil {
 		// Return a validation error with a nice status code
 		return models.User{}, CustomError{
 			StatusCode: http.StatusBadRequest,

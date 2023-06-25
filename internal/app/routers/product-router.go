@@ -7,10 +7,10 @@ import (
 )
 
 func SetupProductRouter(router *gin.RouterGroup, productHandler *handlers.ProductHandler) {
-	userGroup := router.Group("")
-	userGroup.GET("/", productHandler.GetProducts)
-	userGroup.POST("/", productHandler.CreateProduct)
-	userGroup.GET("/:id", productHandler.GetProduct)
-	userGroup.PATCH("/:id", productHandler.UpdateProduct)
-	userGroup.DELETE("/:id", productHandler.DeleteProduct)
+	productGroup := router.Group("")
+	productGroup.GET("/", productHandler.GetProducts)
+	productGroup.POST("/", productHandler.CreateProduct)
+	productGroup.GET("/:id", productHandler.GetProduct)
+	productGroup.PATCH("/:id", productHandler.UpdateProduct)
+	productGroup.DELETE("/:id", productHandler.DeleteProduct)
 }
