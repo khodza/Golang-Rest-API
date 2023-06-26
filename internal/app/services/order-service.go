@@ -103,7 +103,7 @@ func (s *OrderService) GetOrder(orderID int) (models.OrderRes, CustomError) {
 
 func (s *OrderService) GetOrders() ([]models.OrderRes, CustomError) {
 	var resOrders []models.OrderRes
-	orders, err := s.orderRepository.GetOrders()
+	orders, err := s.orderRepository.GetOrders("")
 	if err != nil {
 		return []models.OrderRes{}, CustomError{
 			StatusCode: http.StatusInternalServerError,
@@ -201,15 +201,40 @@ func (s *OrderService) DeleteOrder(orderID int) CustomError {
 		}
 	}
 
-	// //delete order items
-
-	// err = s.orderRepository.DeleteOrderItems(orderID)
-	// if err != nil {
-	// 	return CustomError{
-	// 		StatusCode: http.StatusInternalServerError,
-	// 		Message:    "Error on deleting order items",
-	// 		Err:        err,
-	// 	}
-	// }
 	return CustomError{}
+}
+
+func (s *OrderService) ChangeStatus(orderID int, status string) (models.Order, error) {
+	var order models.Order
+	order.Status = status
+	updatedOrder, err := s.orderRepository.UpdateOrder(orderID, order)
+	if err != nil {
+		return models.Order{}, err
+	}
+	return updatedOrder, nil
+}
+
+func (s *OrderService) GetPaidOrders() (models.OrderPaid, CustomError) {
+	var paidOrders models.OrderPaid
+	allOrders, err := s.orderRepository.GetOrders("paid")
+	if err != nil {
+		return models.OrderPaid{}, CustomError{
+			StatusCode: http.StatusInternalServerError,
+			Message:    "Error on getting order",
+			Err:        err,
+		}
+	}
+
+	var retailPrices float64
+	var supplyPrices float64
+	for i := 0; i < len(allOrders); i++ {
+		retailPrices += allOrders[i].RetailPrice
+		supplyPrices += allOrders[i].SupplyPrice
+	}
+	paidOrders.Orders = allOrders
+	paidOrders.NumberOfOrders = len(allOrders)
+	paidOrders.RetailPrices = retailPrices
+	paidOrders.SupplyPrices = supplyPrices
+
+	return paidOrders, CustomError{}
 }

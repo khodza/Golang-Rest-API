@@ -40,10 +40,16 @@ func (r *OrderRepository) GetOrder(orderID int) (models.Order, error) {
 	return order, nil
 }
 
-func (r *OrderRepository) GetOrders() ([]models.Order, error) {
+func (r *OrderRepository) GetOrders(status string) ([]models.Order, error) {
 	var orders []models.Order
+	var err error
 	query := "SELECT * FROM orders"
-	err := r.db.Select(&orders, query)
+	if status != "" {
+		query += " WHERE status = $1"
+		err = r.db.Select(&orders, query, status)
+	} else {
+		err = r.db.Select(&orders, query)
+	}
 	if err != nil {
 		return []models.Order{}, err
 	}

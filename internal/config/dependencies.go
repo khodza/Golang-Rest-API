@@ -26,16 +26,18 @@ func InitDependencies(logger *zap.Logger) map[string]interface{} {
 	userService := services.NewUserService(*userRepository, *userValidator)
 	productService := services.NewProductService(*productRepository, *productValidator)
 	orderService := services.NewOrderService(*orderRepository, *productService)
-
+	paymentService := services.NewPaymentService(*orderService)
 	// INITIALIZE HANDLERS
 	userHandler := handlers.NewUserHandler(*userService, *handlerUtilities)
 	productHandler := handlers.NewProductHandler(*productService, *handlerUtilities)
 	orderHandler := handlers.NewOrderHandler(*orderService, *handlerUtilities)
+	paymentHandler := handlers.NewPaymentHandler(*paymentService, *handlerUtilities)
 
 	handlersMap := map[string]interface{}{
 		"users":    userHandler,
 		"products": productHandler,
 		"orders":   orderHandler,
+		"payments": paymentHandler,
 	}
 
 	return handlersMap

@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+
 	"go.uber.org/zap"
 )
 
@@ -45,6 +46,9 @@ func main() {
 		case "orders":
 			orderHandler := handler.(*handlers.OrderHandler)
 			routers.SetupOrderRouter(routeGroup, orderHandler)
+		case "payments":
+			paymentHandler := handler.(*handlers.PaymentHandler)
+			routers.SetupPaymentRouter(routeGroup, paymentHandler)
 		}
 	}
 

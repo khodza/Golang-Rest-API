@@ -109,3 +109,16 @@ func (h *OrderHandler) DeleteOrder(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"message": "Order deleted successfully"})
 }
+
+func (h *OrderHandler) GetPaidOrders(c *gin.Context) {
+	orders, CustomError := h.orderService.GetPaidOrders()
+	if CustomError.StatusCode != 0 {
+		h.utils.SendCustomError(c, CustomError, "Failed to get paid orders")
+		return
+	}
+
+	//logging
+	h.utils.LoggingResponse(c, "GetPaidOrders")
+
+	c.JSON(http.StatusOK, orders)
+}
