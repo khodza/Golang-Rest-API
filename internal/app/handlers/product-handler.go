@@ -6,17 +6,18 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"go.uber.org/zap"
 )
 
 type ProductHandler struct {
 	productService services.ProductService
-	utils          HandlerUtilities
+	logger         *zap.Logger
 }
 
-func NewProductHandler(productService services.ProductService, utils HandlerUtilities) *ProductHandler {
+func NewProductHandler(productService services.ProductService, logger *zap.Logger) *ProductHandler {
 	return &ProductHandler{
 		productService: productService,
-		utils:          utils,
+		logger:         logger,
 	}
 }
 
@@ -24,37 +25,37 @@ func (h *ProductHandler) GetProducts(c *gin.Context) {
 	products, CustomError := h.productService.GetProducts()
 
 	if CustomError.StatusCode != 0 {
-		h.utils.SendCustomError(c, CustomError, "Failed to get products")
+		SendCustomError(c, CustomError, "Failed to get products", h.logger)
 		return
 	}
 
 	//logging
-	h.utils.LoggingResponse(c, "GetProducts")
+	LoggingResponse(c, "GetProducts", h.logger)
 
 	c.JSON(http.StatusOK, products)
 }
 
 func (h *ProductHandler) CreateProduct(c *gin.Context) {
 	var product models.Product
-	if err := h.utils.HandleJSONBinding(c, &product); err != nil {
+	if err := HandleJSONBinding(c, &product, h.logger); err != nil {
 		return
 	}
 
 	createdProduct, CustomError := h.productService.CreateProduct(product)
 
 	if CustomError.StatusCode != 0 {
-		h.utils.SendCustomError(c, CustomError, "Failed to create product")
+		SendCustomError(c, CustomError, "Failed to create product", h.logger)
 		return
 	}
 
 	//logging
-	h.utils.LoggingResponse(c, "CreateProduct")
+	LoggingResponse(c, "CreateProduct", h.logger)
 
 	c.JSON(http.StatusCreated, createdProduct)
 }
 
 func (h *ProductHandler) GetProduct(c *gin.Context) {
-	productID, err := h.utils.GetId(c)
+	productID, err := GetId(c, h.logger)
 	if err != nil {
 		return
 	}
@@ -62,51 +63,51 @@ func (h *ProductHandler) GetProduct(c *gin.Context) {
 	product, CustomError := h.productService.GetProduct(productID)
 
 	if CustomError.StatusCode != 0 {
-		h.utils.SendCustomError(c, CustomError, "Failed to get product")
+		SendCustomError(c, CustomError, "Failed to get product", h.logger)
 		return
 	}
 
 	//logging
-	h.utils.LoggingResponse(c, "GetProduct")
+	LoggingResponse(c, "GetProduct", h.logger)
 
 	c.JSON(http.StatusOK, product)
 }
 
 func (h *ProductHandler) UpdateProduct(c *gin.Context) {
-	productID, err := h.utils.GetId(c)
+	productID, err := GetId(c, h.logger)
 	if err != nil {
 		return
 	}
 
 	var product models.Product
-	if err := h.utils.HandleJSONBinding(c, &product); err != nil {
+	if err := HandleJSONBinding(c, &product, h.logger); err != nil {
 		return
 	}
 
 	updatedProduct, CustomError := h.productService.UpdateProduct(productID, product)
 	if CustomError.StatusCode != 0 {
-		h.utils.SendCustomError(c, CustomError, "Failed to update products")
+		SendCustomError(c, CustomError, "Failed to update products", h.logger)
 		return
 	}
 
 	//logging
-	h.utils.LoggingResponse(c, "UpdateProduct")
+	LoggingResponse(c, "UpdateProduct", h.logger)
 
 	c.JSON(http.StatusOK, updatedProduct)
 }
 
 func (h *ProductHandler) DeleteProduct(c *gin.Context) {
-	productID, err := h.utils.GetId(c)
+	productID, err := GetId(c, h.logger)
 	if err != nil {
 		return
 	}
 	if CustomError := h.productService.DeleteProduct(productID); CustomError.StatusCode != 0 {
-		h.utils.SendCustomError(c, CustomError, "Failed to delete product")
+		SendCustomError(c, CustomError, "Failed to delete product", h.logger)
 		return
 	}
 
 	//logging
-	h.utils.LoggingResponse(c, "DeleteProduct")
+	LoggingResponse(c, "DeleteProduct", h.logger)
 
 	c.JSON(http.StatusOK, gin.H{"message": "Product deleted successfully"})
 }

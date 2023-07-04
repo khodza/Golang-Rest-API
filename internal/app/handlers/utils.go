@@ -9,24 +9,14 @@ import (
 	"go.uber.org/zap"
 )
 
-type HandlerUtilities struct {
-	logger *zap.Logger
-}
-
-func NewHandlerUtilities(logger *zap.Logger) *HandlerUtilities {
-	return &HandlerUtilities{
-		logger: logger,
-	}
-}
-
-func (u *HandlerUtilities) GetId(c *gin.Context) (int, error) {
+func GetId(c *gin.Context, logger *zap.Logger) (int, error) {
 	id := c.Param("id")
 	ID, err := strconv.Atoi(id)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": "Invalid Id provided"})
 
 		//logging
-		u.logger.Error("Invalid Id provided",
+		logger.Error("Invalid Id provided",
 			zap.String("method", c.Request.Method),
 			zap.String("path", c.Request.URL.Path),
 			zap.Int("status", http.StatusBadRequest),
@@ -36,12 +26,12 @@ func (u *HandlerUtilities) GetId(c *gin.Context) (int, error) {
 	return ID, nil
 }
 
-func (u *HandlerUtilities) HandleJSONBinding(c *gin.Context, target interface{}) error {
+func HandleJSONBinding(c *gin.Context, target interface{}, logger *zap.Logger) error {
 	if err := c.ShouldBindJSON(&target); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request payload"})
 
 		//logging
-		u.logger.Error("Failed to bind JSON",
+		logger.Error("Failed to bind JSON",
 			zap.String("method", c.Request.Method),
 			zap.String("path", c.Request.URL.Path),
 			zap.Int("status", http.StatusBadRequest),
@@ -51,19 +41,19 @@ func (u *HandlerUtilities) HandleJSONBinding(c *gin.Context, target interface{})
 	return nil
 }
 
-func (u *HandlerUtilities) SendCustomError(c *gin.Context, CustomError services.CustomError, zapMessage string) {
+func SendCustomError(c *gin.Context, CustomError services.CustomError, zapMessage string, logger *zap.Logger) {
 	c.JSON(CustomError.StatusCode, gin.H{"error": CustomError.Message})
 
 	//logging
-	u.logger.Error(zapMessage+"\n"+CustomError.Message,
+	logger.Error(zapMessage+"\n"+CustomError.Message,
 		zap.String("method", c.Request.Method),
 		zap.String("path", c.Request.URL.Path),
 		zap.Int("status", CustomError.StatusCode),
 		zap.Error(CustomError.Err))
 }
 
-func (u *HandlerUtilities) LoggingResponse(c *gin.Context, info string) {
-	u.logger.Info(info,
+func LoggingResponse(c *gin.Context, info string, logger *zap.Logger) {
+	logger.Info(info,
 		zap.String("method", c.Request.Method),
 		zap.String("path", c.Request.URL.Path),
 		zap.Int("status", http.StatusOK),

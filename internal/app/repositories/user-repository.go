@@ -8,11 +8,18 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
+type UserRepositoryInterface interface {
+	GetUsers() ([]models.User, error)
+	CreateUser(user models.User) (models.User, error)
+	GetUser(userID int) (models.User, error)
+	UpdateUser(userID int, user models.User) (models.User, error)
+	DeleteUser(userID int) error
+}
 type UserRepository struct {
 	db *sqlx.DB
 }
 
-func NewUserRepository(db *sqlx.DB) *UserRepository {
+func NewUserRepository(db *sqlx.DB) UserRepositoryInterface {
 	return &UserRepository{
 		db: db,
 	}

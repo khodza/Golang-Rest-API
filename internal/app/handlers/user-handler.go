@@ -11,13 +11,13 @@ import (
 
 type UserHandler struct {
 	userService services.UserService
-	utils       HandlerUtilities
+	logger      *zap.Logger
 }
 
-func NewUserHandler(userService services.UserService, utils HandlerUtilities) *UserHandler {
+func NewUserHandler(userService services.UserService, logger *zap.Logger) *UserHandler {
 	return &UserHandler{
 		userService: userService,
-		utils:       utils,
+		logger:      logger,
 	}
 }
 
@@ -25,43 +25,37 @@ func (h *UserHandler) GetUsers(c *gin.Context) {
 	users, CustomError := h.userService.GetUsers()
 
 	if CustomError.StatusCode != 0 {
-		h.utils.SendCustomError(c, CustomError, "Failed to get users")
+		SendCustomError(c, CustomError, "Failed to get users", h.logger)
 		return
 	}
 
-	h.utils.logger.Info("GetUsers",
-		zap.String("method", c.Request.Method),
-		zap.String("path", c.Request.URL.Path),
-		zap.Int("status", http.StatusOK),
-	)
-
 	//logging
-	h.utils.LoggingResponse(c, "GetUsers")
+	LoggingResponse(c, "GetUsers", h.logger)
 
 	c.JSON(http.StatusOK, users)
 }
 
 func (h *UserHandler) CreateUser(c *gin.Context) {
 	var user models.User
-	if err := h.utils.HandleJSONBinding(c, &user); err != nil {
+	if err := HandleJSONBinding(c, &user, h.logger); err != nil {
 		return
 	}
 
 	createdUser, CustomError := h.userService.CreateUser(user)
 
 	if CustomError.StatusCode != 0 {
-		h.utils.SendCustomError(c, CustomError, "Failed to create user")
+		SendCustomError(c, CustomError, "Failed to create user", h.logger)
 		return
 	}
 
 	//logging
-	h.utils.LoggingResponse(c, "CreateUser")
+	LoggingResponse(c, "CreateUser", h.logger)
 
 	c.JSON(http.StatusCreated, createdUser)
 }
 
 func (h *UserHandler) GetUser(c *gin.Context) {
-	userID, err := h.utils.GetId(c)
+	userID, err := GetId(c, h.logger)
 	if err != nil {
 		return
 	}
@@ -69,53 +63,53 @@ func (h *UserHandler) GetUser(c *gin.Context) {
 	user, CustomError := h.userService.GetUser(userID)
 
 	if CustomError.StatusCode != 0 {
-		h.utils.SendCustomError(c, CustomError, "Failed to get user")
+		SendCustomError(c, CustomError, "Failed to get user", h.logger)
 		return
 	}
 
 	//logging
-	h.utils.LoggingResponse(c, "GetUser")
+	LoggingResponse(c, "GetUser", h.logger)
 
 	c.JSON(http.StatusOK, user)
 }
 
 func (h *UserHandler) UpdateUser(c *gin.Context) {
-	userID, err := h.utils.GetId(c)
+	userID, err := GetId(c, h.logger)
 	if err != nil {
 		return
 	}
 
 	var user models.User
-	if err := h.utils.HandleJSONBinding(c, &user); err != nil {
+	if err := HandleJSONBinding(c, &user, h.logger); err != nil {
 		return
 	}
 
 	updatedUser, CustomError := h.userService.UpdateUser(userID, user)
 
 	if CustomError.StatusCode != 0 {
-		h.utils.SendCustomError(c, CustomError, "Failed to update user")
+		SendCustomError(c, CustomError, "Failed to update user", h.logger)
 		return
 	}
 
 	//logging
-	h.utils.LoggingResponse(c, "UpdateUser")
+	LoggingResponse(c, "UpdateUser", h.logger)
 
 	c.JSON(http.StatusOK, updatedUser)
 }
 
 func (h *UserHandler) DeleteUser(c *gin.Context) {
-	userID, err := h.utils.GetId(c)
+	userID, err := GetId(c, h.logger)
 	if err != nil {
 		return
 	}
 
 	if CustomError := h.userService.DeleteUser(userID); CustomError.StatusCode != 0 {
-		h.utils.SendCustomError(c, CustomError, "Failed to delete user")
+		SendCustomError(c, CustomError, "Failed to delete user", h.logger)
 		return
 	}
 
 	//logging
-	h.utils.LoggingResponse(c, "DeleteUser")
+	LoggingResponse(c, "DeleteUser", h.logger)
 
 	c.JSON(http.StatusOK, gin.H{"message": "User deleted successfully"})
 }

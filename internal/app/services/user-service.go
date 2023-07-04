@@ -11,11 +11,11 @@ import (
 )
 
 type UserService struct {
-	userRepository repositories.UserRepository
+	userRepository repositories.UserRepositoryInterface
 	validator      validators.UserValidator
 }
 
-func NewUserService(userRepository repositories.UserRepository, userValidator validators.UserValidator) *UserService {
+func NewUserService(userRepository repositories.UserRepositoryInterface, userValidator validators.UserValidator) *UserService {
 	return &UserService{
 		userRepository: userRepository,
 		validator:      userValidator,

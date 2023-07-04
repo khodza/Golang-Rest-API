@@ -1,42 +1,42 @@
 package handlers
 
 import (
-	"fmt"
 	"khodza/rest-api/internal/app/models"
 	"khodza/rest-api/internal/app/services"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"go.uber.org/zap"
 )
 
 type PaymentHandler struct {
 	paymentService services.PaymentService
-	utils          HandlerUtilities
+	logger         *zap.Logger
 }
 
-func NewPaymentHandler(paymentService services.PaymentService, utils HandlerUtilities) *PaymentHandler {
+func NewPaymentHandler(paymentService services.PaymentService, logger *zap.Logger) *PaymentHandler {
 	return &PaymentHandler{
 		paymentService: paymentService,
-		utils:          utils,
+		logger:         logger,
 	}
 }
 
 func (h *PaymentHandler) PerformPayment(c *gin.Context) {
 	var payment models.Payment
-	err := h.utils.HandleJSONBinding(c, &payment)
+	err := HandleJSONBinding(c, &payment, h.logger)
 	if err != nil {
 		return
 	}
-	fmt.Println(payment)
+
 	updatedOrder, CustomError := h.paymentService.PerformPayment(payment)
 	if CustomError.StatusCode != 0 {
-		h.utils.SendCustomError(c, CustomError, "Error on performing payment")
+		SendCustomError(c, CustomError, "Error on performing payment", h.logger)
 		return
 	}
 
 	//logging
 
-	h.utils.LoggingResponse(c, "PerformPayment")
+	LoggingResponse(c, "PerformPayment", h.logger)
 
 	c.JSON(http.StatusAccepted, updatedOrder)
 }

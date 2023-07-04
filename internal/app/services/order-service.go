@@ -71,6 +71,7 @@ func (s *OrderService) CreateOrder(newOrder models.OrderReq) (models.Order, Cust
 }
 
 func (s *OrderService) GetOrder(orderID int) (models.OrderRes, CustomError) {
+	// TODO get order and order_items in parallel
 	var readyOrder models.OrderRes
 	order, err := s.orderRepository.GetOrder(orderID)
 	if err != nil {
@@ -102,6 +103,7 @@ func (s *OrderService) GetOrder(orderID int) (models.OrderRes, CustomError) {
 }
 
 func (s *OrderService) GetOrders() ([]models.OrderRes, CustomError) {
+	// TODO: return count also, remove order items
 	var resOrders []models.OrderRes
 	orders, err := s.orderRepository.GetOrders("")
 	if err != nil {

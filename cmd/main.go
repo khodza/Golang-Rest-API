@@ -1,9 +1,11 @@
 package main
 
 import (
-	"khodza/rest-api/internal/app/handlers"
+	"fmt"
 	"khodza/rest-api/internal/app/routers"
 	"khodza/rest-api/internal/config"
+	"khodza/rest-api/internal/database"
+	"khodza/rest-api/internal/dependencies"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -14,51 +16,31 @@ import (
 func main() {
 	//Loading env
 	config.LoadEnv()
-	//Init Logger
-	Logger, err := config.CreateLogger()
-	if err != nil {
-		panic(err)
-	}
-	defer Logger.Sync()
 
 	//Initialize DataBase
-	err = config.InitDataBase()
+	err := database.InitDataBase()
 	if err != nil {
-		Logger.Fatal("Failed to connect to the database", zap.Error(err))
+		fmt.Println("Failed to connect to the database")
 	}
 
 	// Initialize dependencies
-	handlersMap := config.InitDependencies(Logger)
-
+	handlersMap, logger, err := dependencies.InitDependencies()
+	if err != nil {
+		fmt.Println("Failed to initialize dependencies")
+	}
 	// Initialize Gin router
 	router := gin.Default()
 
 	// Connect routers to handlers
-	for route, handler := range handlersMap {
-		routeGroup := router.Group("/" + route)
-		switch route {
-		case "users":
-			userHandler := handler.(*handlers.UserHandler)
-			routers.SetupUserRouter(routeGroup, userHandler)
-		case "products":
-			productHandler := handler.(*handlers.ProductHandler)
-			routers.SetupProductRouter(routeGroup, productHandler)
-		case "orders":
-			orderHandler := handler.(*handlers.OrderHandler)
-			routers.SetupOrderRouter(routeGroup, orderHandler)
-		case "payments":
-			paymentHandler := handler.(*handlers.PaymentHandler)
-			routers.SetupPaymentRouter(routeGroup, paymentHandler)
-		}
-	}
+	routers.ConnectRoutersToHandlers(router, handlersMap)
 
 	// Start the server
-	port := ":8080"
-	Logger.Info("Server starting", zap.String("port", port))
+	port := ":" + config.GetEnv("PORT", "8080")
+
+	logger.Info("Server starting", zap.String("port", port))
 	if err := http.ListenAndServe(port, router); err != nil {
-		Logger.Fatal("Failed to start the server", zap.Error(err))
+		logger.Fatal("Failed to start the server", zap.Error(err))
 	}
 	// Run the server
-	router.Run(":8080")
-
+	router.Run(port)
 }

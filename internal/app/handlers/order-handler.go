@@ -6,52 +6,53 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"go.uber.org/zap"
 )
 
 type OrderHandler struct {
 	orderService services.OrderService
-	utils        HandlerUtilities
+	logger       *zap.Logger
 }
 
-func NewOrderHandler(orderService services.OrderService, utils HandlerUtilities) *OrderHandler {
+func NewOrderHandler(orderService services.OrderService, logger *zap.Logger) *OrderHandler {
 	return &OrderHandler{
 		orderService: orderService,
-		utils:        utils,
+		logger:       logger,
 	}
 }
 
 func (h *OrderHandler) CreateOrder(c *gin.Context) {
 	var newOrder models.OrderReq
-	if err := h.utils.HandleJSONBinding(c, &newOrder); err != nil {
+	if err := HandleJSONBinding(c, &newOrder, h.logger); err != nil {
 		return
 	}
 
 	createdOrder, CustomError := h.orderService.CreateOrder(newOrder)
 	if CustomError.StatusCode != 0 {
-		h.utils.SendCustomError(c, CustomError, "Failed to create order")
+		SendCustomError(c, CustomError, "Failed to create order", h.logger)
 		return
 	}
 
 	//logging
-	h.utils.LoggingResponse(c, "CreateOrder")
+	LoggingResponse(c, "CreateOrder", h.logger)
 
 	c.JSON(http.StatusOK, createdOrder)
 }
 
 func (h *OrderHandler) GetOrder(c *gin.Context) {
-	orderID, err := h.utils.GetId(c)
+	orderID, err := GetId(c, h.logger)
 	if err != nil {
 		return
 	}
 
 	order, CustomError := h.orderService.GetOrder(orderID)
 	if CustomError.StatusCode != 0 {
-		h.utils.SendCustomError(c, CustomError, "Failed to get order")
+		SendCustomError(c, CustomError, "Failed to get order", h.logger)
 		return
 	}
 
 	//logging
-	h.utils.LoggingResponse(c, "GetOrder")
+	LoggingResponse(c, "GetOrder", h.logger)
 
 	c.JSON(http.StatusOK, order)
 }
@@ -59,53 +60,53 @@ func (h *OrderHandler) GetOrder(c *gin.Context) {
 func (h *OrderHandler) GetOrders(c *gin.Context) {
 	orders, CustomError := h.orderService.GetOrders()
 	if CustomError.StatusCode != 0 {
-		h.utils.SendCustomError(c, CustomError, "Failed to get orders")
+		SendCustomError(c, CustomError, "Failed to get orders", h.logger)
 		return
 	}
 
 	//logging
-	h.utils.LoggingResponse(c, "GetOrders")
+	LoggingResponse(c, "GetOrders", h.logger)
 
 	c.JSON(http.StatusOK, orders)
 }
 
 func (h *OrderHandler) UpdateOrder(c *gin.Context) {
 	var newOrder models.OrderReq
-	orderID, err := h.utils.GetId(c)
+	orderID, err := GetId(c, h.logger)
 	if err != nil {
 		return
 	}
 
-	if err = h.utils.HandleJSONBinding(c, &newOrder); err != nil {
+	if err = HandleJSONBinding(c, &newOrder, h.logger); err != nil {
 		return
 	}
 
 	updatedOrder, CustomError := h.orderService.UpdateOrder(orderID, newOrder)
 	if CustomError.StatusCode != 0 {
-		h.utils.SendCustomError(c, CustomError, "Failed to update order")
+		SendCustomError(c, CustomError, "Failed to update order", h.logger)
 		return
 	}
 
 	//logging
-	h.utils.LoggingResponse(c, "UpdateOrder")
+	LoggingResponse(c, "UpdateOrder", h.logger)
 
 	c.JSON(http.StatusOK, updatedOrder)
 }
 
 func (h *OrderHandler) DeleteOrder(c *gin.Context) {
-	orderID, err := h.utils.GetId(c)
+	orderID, err := GetId(c, h.logger)
 	if err != nil {
 		return
 	}
 
 	CustomError := h.orderService.DeleteOrder(orderID)
 	if CustomError.StatusCode != 0 {
-		h.utils.SendCustomError(c, CustomError, "Failed to delete order")
+		SendCustomError(c, CustomError, "Failed to delete order", h.logger)
 		return
 	}
 
 	//logging
-	h.utils.LoggingResponse(c, "DeleteOrder")
+	LoggingResponse(c, "DeleteOrder", h.logger)
 
 	c.JSON(http.StatusOK, gin.H{"message": "Order deleted successfully"})
 }
@@ -113,12 +114,12 @@ func (h *OrderHandler) DeleteOrder(c *gin.Context) {
 func (h *OrderHandler) GetPaidOrders(c *gin.Context) {
 	orders, CustomError := h.orderService.GetPaidOrders()
 	if CustomError.StatusCode != 0 {
-		h.utils.SendCustomError(c, CustomError, "Failed to get paid orders")
+		SendCustomError(c, CustomError, "Failed to get paid orders", h.logger)
 		return
 	}
 
 	//logging
-	h.utils.LoggingResponse(c, "GetPaidOrders")
+	LoggingResponse(c, "GetPaidOrders", h.logger)
 
 	c.JSON(http.StatusOK, orders)
 }
