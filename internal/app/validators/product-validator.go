@@ -7,11 +7,15 @@ import (
 	"github.com/go-playground/validator/v10"
 )
 
+type ProductValidatorInterface interface {
+	ValidateProduct(product *models.Product) error
+}
+
 type ProductValidator struct {
 	validate *validator.Validate
 }
 
-func NewProductValidator() *ProductValidator {
+func NewProductValidator() ProductValidatorInterface {
 	return &ProductValidator{
 		validate: validator.New(),
 	}

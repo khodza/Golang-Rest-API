@@ -8,11 +8,18 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
+type ProductRepositoryInterface interface {
+	GetProducts() ([]models.Product, error)
+	CreateProduct(product models.Product) (models.Product, error)
+	GetProduct(productID int) (models.Product, error)
+	UpdateProduct(productID int, product models.Product) (models.Product, error)
+	DeleteProduct(productID int) error
+}
 type ProductRepository struct {
 	db *sqlx.DB
 }
 
-func NewProductRepository(db *sqlx.DB) *ProductRepository {
+func NewProductRepository(db *sqlx.DB) ProductRepositoryInterface {
 	return &ProductRepository{
 		db: db,
 	}

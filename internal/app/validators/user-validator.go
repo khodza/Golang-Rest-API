@@ -7,11 +7,16 @@ import (
 	"github.com/go-playground/validator/v10"
 )
 
+type UserValidatorInterface interface {
+	ValidateUserCreate(user *models.User) error
+	ValidateUserUpdate(user *models.User) error
+}
+
 type UserValidator struct {
 	validate *validator.Validate
 }
 
-func NewUserValidator() *UserValidator {
+func NewUserValidator() UserValidatorInterface {
 	return &UserValidator{
 		validate: validator.New(),
 	}

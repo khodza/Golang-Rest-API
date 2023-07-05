@@ -8,11 +8,21 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
+type OrderRepositoryInterface interface {
+	CreateOrder(order models.Order) (int, error)
+	GetOrder(orderID int) (models.Order, error)
+	GetOrders(status string) ([]models.Order, error)
+	UpdateOrder(orderID int, newOrder models.Order) (models.Order, error)
+	DeleteOrder(orderID int) error
+	CreateOrderItem(orderItem models.OrderItem) (int, error)
+	GetOrderItems(orderID int) ([]models.OrderItem, error)
+	DeleteOrderItems(orderID int) error
+}
 type OrderRepository struct {
 	db *sqlx.DB
 }
 
-func NewOrderRepository(db *sqlx.DB) *OrderRepository {
+func NewOrderRepository(db *sqlx.DB) OrderRepositoryInterface {
 	return &OrderRepository{
 		db: db,
 	}
@@ -54,26 +64,6 @@ func (r *OrderRepository) GetOrders(status string) ([]models.Order, error) {
 		return []models.Order{}, err
 	}
 	return orders, nil
-}
-
-func (r *OrderRepository) CreateOrderItem(orderItem models.OrderItem) (int, error) {
-	query := "INSERT INTO order_items (order_id, product_id, quantity) VALUES($1, $2, $3) RETURNING id"
-	var createdOrderItem models.OrderItem
-	err := r.db.Get(&createdOrderItem, query, orderItem.OrderID, orderItem.ProductID, orderItem.Quantity)
-	if err != nil {
-		return 0, err
-	}
-	return createdOrderItem.OrderID, nil
-}
-
-func (r *OrderRepository) GetOrderItems(orderID int) ([]models.OrderItem, error) {
-	var orderItems []models.OrderItem
-	query := "SELECT * FROM order_items WHERE order_id = $1"
-	err := r.db.Select(&orderItems, query, orderID)
-	if err != nil {
-		return []models.OrderItem{}, err
-	}
-	return orderItems, nil
 }
 
 func (r *OrderRepository) UpdateOrder(orderID int, newOrder models.Order) (models.Order, error) {
@@ -139,6 +129,35 @@ func (r *OrderRepository) UpdateOrder(orderID int, newOrder models.Order) (model
 	return updatedOrder, nil
 }
 
+func (r *OrderRepository) DeleteOrder(orderID int) error {
+	query := "DELETE FROM orders WHERE id = $1"
+	_, err := r.db.Exec(query, orderID)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (r *OrderRepository) CreateOrderItem(orderItem models.OrderItem) (int, error) {
+	query := "INSERT INTO order_items (order_id, product_id, quantity) VALUES($1, $2, $3) RETURNING id"
+	var createdOrderItem models.OrderItem
+	err := r.db.Get(&createdOrderItem, query, orderItem.OrderID, orderItem.ProductID, orderItem.Quantity)
+	if err != nil {
+		return 0, err
+	}
+	return createdOrderItem.OrderID, nil
+}
+
+func (r *OrderRepository) GetOrderItems(orderID int) ([]models.OrderItem, error) {
+	var orderItems []models.OrderItem
+	query := "SELECT * FROM order_items WHERE order_id = $1"
+	err := r.db.Select(&orderItems, query, orderID)
+	if err != nil {
+		return []models.OrderItem{}, err
+	}
+	return orderItems, nil
+}
+
 func (r *OrderRepository) DeleteOrderItems(orderID int) error {
 	query := "DELETE FROM order_items WHERE order_id = $1"
 	_, err := r.db.Exec(query, orderID)
@@ -146,14 +165,5 @@ func (r *OrderRepository) DeleteOrderItems(orderID int) error {
 		return err
 	}
 
-	return nil
-}
-
-func (r *OrderRepository) DeleteOrder(orderID int) error {
-	query := "DELETE FROM orders WHERE id = $1"
-	_, err := r.db.Exec(query, orderID)
-	if err != nil {
-		return err
-	}
 	return nil
 }

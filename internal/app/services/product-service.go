@@ -10,28 +10,23 @@ import (
 	"github.com/lib/pq"
 )
 
+type ProductServiceInterface interface {
+	CreateProduct(product models.Product) (models.Product, CustomError)
+	GetProducts() ([]models.Product, CustomError)
+	GetProduct(productID int) (models.Product, CustomError)
+	UpdateProduct(productID int, product models.Product) (models.Product, CustomError)
+	DeleteProduct(productID int) CustomError
+}
 type ProductService struct {
-	productRepository repositories.ProductRepository
-	validator         validators.ProductValidator
+	productRepository repositories.ProductRepositoryInterface
+	validator         validators.ProductValidatorInterface
 }
 
-func NewProductService(productRepository repositories.ProductRepository, productValidator validators.ProductValidator) *ProductService {
+func NewProductService(productRepository repositories.ProductRepositoryInterface, productValidator validators.ProductValidatorInterface) *ProductService {
 	return &ProductService{
 		productRepository: productRepository,
 		validator:         productValidator,
 	}
-}
-
-func (s *ProductService) GetProducts() ([]models.Product, CustomError) {
-	products, err := s.productRepository.GetProducts()
-	if err != nil {
-		return []models.Product{}, CustomError{
-			StatusCode: http.StatusInternalServerError,
-			Message:    "Failed to get products",
-			Err:        err,
-		}
-	}
-	return products, CustomError{}
 }
 
 func (s *ProductService) CreateProduct(product models.Product) (models.Product, CustomError) {
@@ -62,6 +57,18 @@ func (s *ProductService) CreateProduct(product models.Product) (models.Product, 
 	}
 
 	return newProduct, CustomError{}
+}
+
+func (s *ProductService) GetProducts() ([]models.Product, CustomError) {
+	products, err := s.productRepository.GetProducts()
+	if err != nil {
+		return []models.Product{}, CustomError{
+			StatusCode: http.StatusInternalServerError,
+			Message:    "Failed to get products",
+			Err:        err,
+		}
+	}
+	return products, CustomError{}
 }
 
 func (s *ProductService) GetProduct(productID int) (models.Product, CustomError) {

@@ -10,11 +10,11 @@ import (
 )
 
 type OrderHandler struct {
-	orderService services.OrderService
+	orderService services.OrderServiceInterface
 	logger       *zap.Logger
 }
 
-func NewOrderHandler(orderService services.OrderService, logger *zap.Logger) *OrderHandler {
+func NewOrderHandler(orderService services.OrderServiceInterface, logger *zap.Logger) *OrderHandler {
 	return &OrderHandler{
 		orderService: orderService,
 		logger:       logger,

@@ -10,11 +10,11 @@ import (
 )
 
 type PaymentHandler struct {
-	paymentService services.PaymentService
+	paymentService services.PaymentServiceInterface
 	logger         *zap.Logger
 }
 
-func NewPaymentHandler(paymentService services.PaymentService, logger *zap.Logger) *PaymentHandler {
+func NewPaymentHandler(paymentService services.PaymentServiceInterface, logger *zap.Logger) *PaymentHandler {
 	return &PaymentHandler{
 		paymentService: paymentService,
 		logger:         logger,

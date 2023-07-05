@@ -10,11 +10,11 @@ import (
 )
 
 type ProductHandler struct {
-	productService services.ProductService
+	productService services.ProductServiceInterface
 	logger         *zap.Logger
 }
 
-func NewProductHandler(productService services.ProductService, logger *zap.Logger) *ProductHandler {
+func NewProductHandler(productService services.ProductServiceInterface, logger *zap.Logger) *ProductHandler {
 	return &ProductHandler{
 		productService: productService,
 		logger:         logger,

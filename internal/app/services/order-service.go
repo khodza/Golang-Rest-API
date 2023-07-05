@@ -7,14 +7,23 @@ import (
 	"net/http"
 )
 
+type OrderServiceInterface interface {
+	CreateOrder(newOrder models.OrderReq) (models.Order, CustomError)
+	GetOrder(orderID int) (models.OrderRes, CustomError)
+	GetOrders() ([]models.OrderRes, CustomError)
+	UpdateOrder(orderID int, newOrder models.OrderReq) (models.Order, CustomError)
+	DeleteOrder(orderID int) CustomError
+	ChangeStatus(orderID int, status string) (models.Order, error)
+	GetPaidOrders() (models.OrderPaid, CustomError)
+}
 type OrderService struct {
-	orderRepository repositories.OrderRepository
-	productService  ProductService
+	orderRepository repositories.OrderRepositoryInterface
+	productService  ProductServiceInterface
 }
 
 func NewOrderService(
-	orderRepository repositories.OrderRepository,
-	productService ProductService,
+	orderRepository repositories.OrderRepositoryInterface,
+	productService ProductServiceInterface,
 ) *OrderService {
 	return &OrderService{
 		orderRepository: orderRepository,

@@ -10,12 +10,20 @@ import (
 	"github.com/lib/pq"
 )
 
-type UserService struct {
-	userRepository repositories.UserRepositoryInterface
-	validator      validators.UserValidator
+type UserServiceInterface interface {
+	GetUsers() ([]models.User, CustomError)
+	CreateUser(user models.User) (models.User, CustomError)
+	GetUser(userID int) (models.User, CustomError)
+	UpdateUser(userID int, user models.User) (models.User, CustomError)
+	DeleteUser(userID int) CustomError
 }
 
-func NewUserService(userRepository repositories.UserRepositoryInterface, userValidator validators.UserValidator) *UserService {
+type UserService struct {
+	userRepository repositories.UserRepositoryInterface
+	validator      validators.UserValidatorInterface
+}
+
+func NewUserService(userRepository repositories.UserRepositoryInterface, userValidator validators.UserValidatorInterface) UserServiceInterface {
 	return &UserService{
 		userRepository: userRepository,
 		validator:      userValidator,

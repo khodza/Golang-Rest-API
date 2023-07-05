@@ -6,13 +6,16 @@ import (
 	"net/http"
 )
 
+type PaymentServiceInterface interface {
+	PerformPayment(payment models.Payment) (models.Order, CustomError)
+}
 type PaymentService struct {
-	orderService OrderService
+	orderService OrderServiceInterface
 }
 
 func NewPaymentService(
-	orderService OrderService,
-) *PaymentService {
+	orderService OrderServiceInterface,
+) PaymentServiceInterface {
 	return &PaymentService{
 		orderService: orderService,
 	}
