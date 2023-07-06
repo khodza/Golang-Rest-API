@@ -11,6 +11,7 @@ func SetupOrderRouter(router *gin.RouterGroup, orderHandler *handlers.OrderHandl
 	orderGroup.GET("/", orderHandler.GetOrders)
 	orderGroup.POST("/", orderHandler.CreateOrder)
 	orderGroup.GET("/paid", orderHandler.GetPaidOrders)
+	orderGroup.GET("/items/:id", orderHandler.GetOrderItems)
 	orderGroup.GET("/:id", orderHandler.GetOrder)
 	orderGroup.PATCH("/:id", orderHandler.UpdateOrder)
 	orderGroup.DELETE("/:id", orderHandler.DeleteOrder)

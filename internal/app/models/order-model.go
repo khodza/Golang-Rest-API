@@ -36,6 +36,11 @@ type OrderRes struct {
 	Products []OrderItem `json:"products"`
 }
 
+type AllOrdersRes struct {
+	Count  int     `json:"count" db:"-"`
+	Orders []Order `json:"orders" db:"-"`
+}
+
 type OrderPaid struct {
 	RetailPrices   float64 `json:"all_retailed_prices"`
 	SupplyPrices   float64 `json:"all_supply_prices"`

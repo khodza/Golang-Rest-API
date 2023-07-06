@@ -70,6 +70,24 @@ func (h *OrderHandler) GetOrders(c *gin.Context) {
 	c.JSON(http.StatusOK, orders)
 }
 
+func (h *OrderHandler) GetOrderItems(c *gin.Context) {
+	orderID, err := GetId(c, h.logger)
+	if err != nil {
+		return
+	}
+
+	orderItems, CustomError := h.orderService.GetOrderItems(orderID)
+	if CustomError.StatusCode != 0 {
+		SendCustomError(c, CustomError, "Failed to get items", h.logger)
+		return
+	}
+
+	//logging
+	LoggingResponse(c, "GetOrderItems", h.logger)
+
+	c.JSON(http.StatusOK, orderItems)
+}
+
 func (h *OrderHandler) UpdateOrder(c *gin.Context) {
 	var newOrder models.OrderReq
 	orderID, err := GetId(c, h.logger)
