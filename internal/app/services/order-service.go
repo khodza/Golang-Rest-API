@@ -32,27 +32,47 @@ func NewOrderService(
 }
 
 func (s *OrderService) CreateOrder(newOrder models.OrderReq) (models.Order, CustomError) {
+	//Start transaction
+	tx, err := s.orderRepository.BeginTransaction()
+	if err != nil {
+		return models.Order{}, CustomError{
+			StatusCode: http.StatusInternalServerError,
+			Message:    "Error starting transaction",
+			Err:        err,
+		}
+	}
+
+	//Rollback
+	defer func() {
+		if err != nil {
+			tx.Rollback()
+		} else {
+			tx.Commit()
+		}
+	}()
+
 	var order models.Order
 	order.UserID = newOrder.UserID
 	order.Status = "pending"
 	products := newOrder.Products
 
-	var supplyPrice float64
-	var retailPrice float64
+	//Calculating prices
+	var totalSupplyPrice float64
+	var totalRetailPrice float64
 	for i := 0; i < len(products); i++ {
 		product, CustomError := s.productService.GetProduct(products[i].ProductID)
 		if CustomError.StatusCode != 0 {
 			return models.Order{}, CustomError
 		}
 
-		supplyPrice += product.SupplyPrice * float64(products[i].Quantity)
-		retailPrice += product.RetailPrice * float64(products[i].Quantity)
+		totalSupplyPrice += product.SupplyPrice * float64(products[i].Quantity)
+		totalRetailPrice += product.RetailPrice * float64(products[i].Quantity)
 	}
-	order.SupplyPrice = supplyPrice
-	order.RetailPrice = retailPrice
+	order.SupplyPrice = totalSupplyPrice
+	order.RetailPrice = totalSupplyPrice
 
 	//create order
-	orderID, err := s.orderRepository.CreateOrder(order)
+	orderID, err := s.orderRepository.CreateOrderInTransaction(order, tx)
 	if err != nil {
 		return models.Order{}, CustomError{
 			StatusCode: http.StatusInternalServerError,
@@ -61,18 +81,27 @@ func (s *OrderService) CreateOrder(newOrder models.OrderReq) (models.Order, Cust
 		}
 	}
 	order.ID = orderID
+
 	//create order items
 	for i := 0; i < len(products); i++ {
 		var orderItem models.OrderItem
 		orderItem.OrderID = orderID
 		orderItem.ProductID, orderItem.Quantity = products[i].ProductID, products[i].Quantity
-		_, err := s.orderRepository.CreateOrderItem(orderItem)
+		_, err := s.orderRepository.CreateOrderItemInTransaction(orderItem, tx)
 		if err != nil {
 			return models.Order{}, CustomError{
 				StatusCode: http.StatusInternalServerError,
 				Message:    "Error on creating order items",
 				Err:        err,
 			}
+		}
+	}
+
+	if err != nil {
+		return models.Order{}, CustomError{
+			StatusCode: http.StatusInternalServerError,
+			Message:    "Error committing transaction",
+			Err:        err,
 		}
 	}
 

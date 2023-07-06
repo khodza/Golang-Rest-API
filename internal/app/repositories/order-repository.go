@@ -17,6 +17,9 @@ type OrderRepositoryInterface interface {
 	CreateOrderItem(orderItem models.OrderItem) (int, error)
 	GetOrderItems(orderID int) ([]models.OrderItem, error)
 	DeleteOrderItems(orderID int) error
+	BeginTransaction() (*sqlx.Tx, error)
+	CreateOrderInTransaction(order models.Order, tx *sqlx.Tx) (int, error)
+	CreateOrderItemInTransaction(orderItem models.OrderItem, tx *sqlx.Tx) (int, error)
 }
 type OrderRepository struct {
 	db *sqlx.DB
@@ -33,6 +36,17 @@ func (r *OrderRepository) CreateOrder(order models.Order) (int, error) {
 	query := "INSERT INTO orders (user_id, supply_price, retail_price, status) VALUES($1, $2, $3, $4) RETURNING id"
 	var createdOrder models.Order
 	err := r.db.Get(&createdOrder, query, order.UserID, order.SupplyPrice, order.RetailPrice, order.Status)
+	if err != nil {
+		return 0, err
+	}
+
+	return createdOrder.ID, nil
+}
+
+func (r *OrderRepository) CreateOrderInTransaction(order models.Order, tx *sqlx.Tx) (int, error) {
+	query := "INSERT INTO orders (user_id, supply_price, retail_price, status) VALUES($1, $2, $3, $4) RETURNING id"
+	var createdOrder models.Order
+	err := tx.Get(&createdOrder, query, order.UserID, order.SupplyPrice, order.RetailPrice, order.Status)
 	if err != nil {
 		return 0, err
 	}
@@ -148,6 +162,16 @@ func (r *OrderRepository) CreateOrderItem(orderItem models.OrderItem) (int, erro
 	return createdOrderItem.OrderID, nil
 }
 
+func (r *OrderRepository) CreateOrderItemInTransaction(orderItem models.OrderItem, tx *sqlx.Tx) (int, error) {
+	query := "INSERT INTO order_items (order_id, product_id, quantity) VALUES($1, $2, $3) RETURNING id"
+	var createdOrderItem models.OrderItem
+	err := tx.Get(&createdOrderItem, query, orderItem.OrderID, orderItem.ProductID, orderItem.Quantity)
+	if err != nil {
+		return 0, err
+	}
+	return createdOrderItem.OrderID, nil
+}
+
 func (r *OrderRepository) GetOrderItems(orderID int) ([]models.OrderItem, error) {
 	var orderItems []models.OrderItem
 	query := "SELECT * FROM order_items WHERE order_id = $1"
@@ -166,4 +190,8 @@ func (r *OrderRepository) DeleteOrderItems(orderID int) error {
 	}
 
 	return nil
+}
+
+func (r *OrderRepository) BeginTransaction() (*sqlx.Tx, error) {
+	return r.db.Beginx()
 }
