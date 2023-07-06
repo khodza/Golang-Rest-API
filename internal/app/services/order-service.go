@@ -5,6 +5,7 @@ import (
 	"khodza/rest-api/internal/app/models"
 	"khodza/rest-api/internal/app/repositories"
 	"net/http"
+	"sync"
 )
 
 type OrderServiceInterface interface {
@@ -108,36 +109,69 @@ func (s *OrderService) CreateOrder(newOrder models.OrderReq) (models.Order, Cust
 	return order, CustomError{}
 }
 
-func (s *OrderService) GetOrder(orderID int) (models.OrderRes, CustomError) {
-	// TODO get order and order_items in parallel
-	var readyOrder models.OrderRes
-	order, err := s.orderRepository.GetOrder(orderID)
-	if err != nil {
+type ChanelResult struct {
+	Order models.OrderRes
+	Error CustomError
+}
 
-		if err == sql.ErrNoRows {
-			return models.OrderRes{}, CustomError{
-				StatusCode: http.StatusNotFound,
-				Message:    "No order found with the given ID",
+func (s *OrderService) GetOrder(orderID int) (models.OrderRes, CustomError) {
+	var readyOrder models.OrderRes
+	var error CustomError
+	//create chanel
+	orderCh := make(chan models.Order, 1)
+	orderItemsCh := make(chan []models.OrderItem, 1)
+	var wg sync.WaitGroup
+
+	wg.Add(2)
+	//Get ORDER
+	go func() {
+		defer wg.Done()
+		order, err := s.orderRepository.GetOrder(orderID)
+		if err != nil {
+
+			if err == sql.ErrNoRows {
+				error = CustomError{
+					StatusCode: http.StatusNotFound,
+					Message:    "No order found with the given ID",
+					Err:        err,
+				}
+			}
+			error = CustomError{
+				StatusCode: http.StatusInternalServerError,
+				Message:    "Error on getting order",
 				Err:        err,
 			}
+			return
 		}
-		return models.OrderRes{}, CustomError{
-			StatusCode: http.StatusInternalServerError,
-			Message:    "Error on getting order",
-			Err:        err,
+		orderCh <- order
+	}()
+	//Get Order Items
+	go func() {
+		defer wg.Done()
+		orderItems, err := s.orderRepository.GetOrderItems(orderID)
+		if err != nil {
+			error = CustomError{
+				StatusCode: http.StatusInternalServerError,
+				Message:    "Error on getting order items",
+				Err:        err,
+			}
+			return
 		}
+		orderItemsCh <- orderItems
+	}()
+
+	wg.Wait()
+	close(orderCh)
+	close(orderItemsCh)
+	for order := range orderCh {
+		readyOrder.Order = order
 	}
-	readyOrder.Order = order
-	orderItems, err := s.orderRepository.GetOrderItems(order.ID)
-	if err != nil {
-		return models.OrderRes{}, CustomError{
-			StatusCode: http.StatusInternalServerError,
-			Message:    "Error on getting order items",
-			Err:        err,
-		}
+
+	for orderItems := range orderItemsCh {
+		readyOrder.Products = orderItems
 	}
-	readyOrder.Products = orderItems
-	return readyOrder, CustomError{}
+
+	return readyOrder, error
 }
 
 func (s *OrderService) GetOrders() ([]models.OrderRes, CustomError) {
