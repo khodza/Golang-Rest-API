@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"khodza/rest-api/internal/app/routers"
 	"khodza/rest-api/internal/config"
-	"khodza/rest-api/internal/database"
 	"khodza/rest-api/internal/dependencies"
+	database "khodza/rest-api/pkg/db"
 	"net/http"
 
 	"github.com/gin-gonic/gin"

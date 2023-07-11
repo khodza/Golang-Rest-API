@@ -5,22 +5,23 @@ import (
 	"fmt"
 	custom_errors "khodza/rest-api/internal/app/errors"
 	"khodza/rest-api/internal/app/models"
+	database "khodza/rest-api/pkg/db"
 	"strings"
 
 	"github.com/jmoiron/sqlx"
 )
 
 type OrderRepositoryInterface interface {
-	CreateOrder(tx *sqlx.Tx, order models.Order) (int, error)
+	CreateOrder(tx database.Transaction, order models.Order) (int, error)
 	GetOrder(orderID int) (models.Order, error)
 	GetOrders(status string) ([]models.Order, error)
 	GetOrdersCount() (int, error)
-	UpdateOrder(tx *sqlx.Tx, orderID int, newOrder models.Order) (models.Order, error)
+	UpdateOrder(tx database.Transaction, orderID int, newOrder models.Order) (models.Order, error)
 	DeleteOrder(orderID int) error
-	CreateOrderItem(tx *sqlx.Tx, orderItem models.OrderItem) (int, error)
+	CreateOrderItem(tx database.Transaction, orderItem models.OrderItem) (int, error)
 	GetOrderItems(orderID int) ([]models.OrderItem, error)
-	DeleteOrderItems(tx *sqlx.Tx, orderID int) error
-	BeginTransaction() (*sqlx.Tx, error)
+	DeleteOrderItems(tx database.Transaction, orderID int) error
+	BeginTransaction() (database.Transaction, error)
 }
 type OrderRepository struct {
 	db *sqlx.DB
@@ -48,7 +49,7 @@ func (r *OrderRepository) GetOrders(status string) ([]models.Order, error) {
 	return orders, nil
 }
 
-func (r *OrderRepository) CreateOrder(tx *sqlx.Tx, order models.Order) (int, error) {
+func (r *OrderRepository) CreateOrder(tx database.Transaction, order models.Order) (int, error) {
 	query := "INSERT INTO orders (user_id, supply_price, retail_price, status) VALUES($1, $2, $3, $4) RETURNING id"
 	var createdOrder models.Order
 
@@ -82,7 +83,7 @@ func (r *OrderRepository) GetOrder(orderID int) (models.Order, error) {
 	return order, nil
 }
 
-func (r *OrderRepository) UpdateOrder(tx *sqlx.Tx, orderID int, newOrder models.Order) (models.Order, error) {
+func (r *OrderRepository) UpdateOrder(tx database.Transaction, orderID int, newOrder models.Order) (models.Order, error) {
 	updateQuery := "UPDATE orders SET"
 	params := []interface{}{}
 	paramCount := 1
@@ -168,7 +169,7 @@ func (r *OrderRepository) GetOrdersCount() (int, error) {
 	return count, nil
 }
 
-func (r *OrderRepository) CreateOrderItem(tx *sqlx.Tx, orderItem models.OrderItem) (int, error) {
+func (r *OrderRepository) CreateOrderItem(tx database.Transaction, orderItem models.OrderItem) (int, error) {
 	query := "INSERT INTO order_items (order_id, product_id, quantity) VALUES($1, $2, $3) RETURNING id"
 	var createdOrderItem models.OrderItem
 
@@ -198,7 +199,7 @@ func (r *OrderRepository) GetOrderItems(orderID int) ([]models.OrderItem, error)
 	return orderItems, nil
 }
 
-func (r *OrderRepository) DeleteOrderItems(tx *sqlx.Tx, orderID int) error {
+func (r *OrderRepository) DeleteOrderItems(tx database.Transaction, orderID int) error {
 	query := "DELETE FROM order_items WHERE order_id = $1"
 
 	var err error
@@ -213,6 +214,10 @@ func (r *OrderRepository) DeleteOrderItems(tx *sqlx.Tx, orderID int) error {
 	return nil
 }
 
-func (r *OrderRepository) BeginTransaction() (*sqlx.Tx, error) {
-	return r.db.Beginx()
+func (r *OrderRepository) BeginTransaction() (database.Transaction, error) {
+	tx, err := r.db.Beginx()
+	if err != nil {
+		return nil, err
+	}
+	return &database.CustomTx{Tx: tx}, nil
 }

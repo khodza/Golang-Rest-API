@@ -65,7 +65,7 @@ func (s *OrderService) CreateOrder(newOrder models.OrderReq) (models.Order, erro
 		totalRetailPrice += product.RetailPrice * float64(products[i].Quantity)
 	}
 	order.SupplyPrice = totalSupplyPrice
-	order.RetailPrice = totalSupplyPrice
+	order.RetailPrice = totalRetailPrice
 
 	//create order
 	orderID, err := s.orderRepository.CreateOrder(tx, order)

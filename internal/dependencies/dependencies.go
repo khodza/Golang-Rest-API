@@ -7,8 +7,8 @@ import (
 	"khodza/rest-api/internal/app/repositories"
 	"khodza/rest-api/internal/app/services"
 	"khodza/rest-api/internal/app/validators"
-	"khodza/rest-api/internal/database"
-	"khodza/rest-api/internal/logger"
+	database "khodza/rest-api/pkg/db"
+	"khodza/rest-api/pkg/logger"
 
 	"go.uber.org/zap"
 )

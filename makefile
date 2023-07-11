@@ -6,19 +6,19 @@ read:
 	@echo $(POSTGRES_URL)
 
 migrate-create:
-	migrate create -dir ./internal/db/migrations -seq -ext sql $(name)
+	migrate create -dir ./internal/app/migrations -seq -ext sql $(name)
 
 migrate-up:
-	migrate -path ./internal/db/migrations -database $(POSTGRES_URL) up
+	migrate -path ./internal/app/migrations -database $(POSTGRES_URL) up
 
 migrate-up-single:
-	migrate -path ./internal/db/migrations -database $(POSTGRES_URL) up $(file)
+	migrate -path ./internal/app/migrations -database $(POSTGRES_URL) up $(file)
 
 migrate-down-single:
-	migrate -path ./internal/db/migrations -database $(POSTGRES_URL) down $(file)
+	migrate -path ./internal/app/migrations -database $(POSTGRES_URL) down $(file)
 
 migrate-change-version:
-	migrate -path ./internal/db/migrations -database $(POSTGRES_URL) force $(v)
+	migrate -path ./internal/app/migrations -database $(POSTGRES_URL) force $(v)
 compose-up:
 	docker compose up -d
 
@@ -39,6 +39,17 @@ mockgen-user-repository:
 
 mockgen-user-validator:
 	mockgen -source=internal/app/validators/user-validator.go -destination=internal/app/services/mocks/mock_user_validator.go -package=mocks
+
+mockgen-order-repository:
+	mockgen -source=internal/app/repositories/order-repository.go -destination=internal/app/services/mocks/mock_order_repository.go -package=mocks
+
+mockgen-product-service:
+	mockgen -source=internal/app/services/product-service.go -destination=internal/app/services/mocks/mock_product_service.go -package=mocks
+
+mockgen-transactions:
+		mockgen -source=./pkg/db/tx.go -destination=internal/app/services/mocks/mock_transactions.go -package=mocks
+
+
 
 
 test-services:
