@@ -1,21 +1,17 @@
 package services
 
 import (
-	"database/sql"
 	"khodza/rest-api/internal/app/models"
 	"khodza/rest-api/internal/app/repositories"
 	"khodza/rest-api/internal/app/validators"
-	"net/http"
-
-	"github.com/lib/pq"
 )
 
 type ProductServiceInterface interface {
-	CreateProduct(product models.Product) (models.Product, CustomError)
-	GetProducts() ([]models.Product, CustomError)
-	GetProduct(productID int) (models.Product, CustomError)
-	UpdateProduct(productID int, product models.Product) (models.Product, CustomError)
-	DeleteProduct(productID int) CustomError
+	CreateProduct(product models.Product) (models.Product, error)
+	GetProducts() ([]models.Product, error)
+	GetProduct(productID int) (models.Product, error)
+	UpdateProduct(productID int, product models.Product) (models.Product, error)
+	DeleteProduct(productID int) error
 }
 type ProductService struct {
 	productRepository repositories.ProductRepositoryInterface
@@ -29,123 +25,50 @@ func NewProductService(productRepository repositories.ProductRepositoryInterface
 	}
 }
 
-func (s *ProductService) CreateProduct(product models.Product) (models.Product, CustomError) {
+func (s *ProductService) CreateProduct(product models.Product) (models.Product, error) {
 	if err := s.validator.ValidateProduct(&product); err != nil {
-		return models.Product{}, CustomError{
-			StatusCode: http.StatusBadRequest,
-			Message:    err.Error(),
-			Err:        err,
-		}
+		return models.Product{}, err
 	}
 
 	newProduct, err := s.productRepository.CreateProduct(product)
 	if err != nil {
-		pqErr, _ := err.(*pq.Error)
-		if pqErr.Code == "23505" {
-			return models.Product{}, CustomError{
-				StatusCode: http.StatusBadRequest,
-				Message:    "Product with the same barcode already exists",
-				Err:        err,
-			}
-		}
-
-		return models.Product{}, CustomError{
-			StatusCode: http.StatusInternalServerError,
-			Message:    "Failed to create product",
-			Err:        err,
-		}
+		return models.Product{}, err
 	}
 
-	return newProduct, CustomError{}
+	return newProduct, nil
 }
 
-func (s *ProductService) GetProducts() ([]models.Product, CustomError) {
+func (s *ProductService) GetProducts() ([]models.Product, error) {
 	products, err := s.productRepository.GetProducts()
 	if err != nil {
-		return []models.Product{}, CustomError{
-			StatusCode: http.StatusInternalServerError,
-			Message:    "Failed to get products",
-			Err:        err,
-		}
+		return []models.Product{}, err
 	}
-	return products, CustomError{}
+	return products, nil
 }
 
-func (s *ProductService) GetProduct(productID int) (models.Product, CustomError) {
+func (s *ProductService) GetProduct(productID int) (models.Product, error) {
 	product, err := s.productRepository.GetProduct(productID)
 	if err != nil {
-		if err == sql.ErrNoRows {
-			return models.Product{}, CustomError{
-				StatusCode: http.StatusNotFound,
-				Message:    "No product found with the given ID",
-				Err:        err,
-			}
-		}
-
-		return models.Product{}, CustomError{
-			StatusCode: http.StatusInternalServerError,
-			Message:    "Something went wrong while getting product",
-			Err:        err,
-		}
+		return models.Product{}, err
 	}
 
-	return product, CustomError{}
+	return product, nil
 }
 
-func (s *ProductService) UpdateProduct(productID int, product models.Product) (models.Product, CustomError) {
-	// if err := s.validator.ValidateProduct(&product); err != nil {
-	// 	return models.Product{}, CustomError{
-	// 		StatusCode: http.StatusBadRequest,
-	// 		Message:    err.Error(),
-	// 		Err:        err,
-	// 	}
-	// }
-
+func (s *ProductService) UpdateProduct(productID int, product models.Product) (models.Product, error) {
 	updatedProduct, err := s.productRepository.UpdateProduct(productID, product)
 	if err != nil {
-		if err == sql.ErrNoRows {
-			return models.Product{}, CustomError{
-				StatusCode: http.StatusNotFound,
-				Message:    "No product found with the given ID",
-				Err:        err,
-			}
-		}
-
-		pqErr, _ := err.(*pq.Error)
-		if pqErr.Code == "23505" {
-			return models.Product{}, CustomError{
-				StatusCode: http.StatusBadRequest,
-				Message:    "Product with the same barcode already exists",
-				Err:        err,
-			}
-		}
-
-		return models.Product{}, CustomError{
-			StatusCode: http.StatusInternalServerError,
-			Message:    "Something went wrong while updating product",
-			Err:        err,
-		}
+		return models.Product{}, err
 	}
 
-	return updatedProduct, CustomError{}
+	return updatedProduct, nil
 }
 
-func (s *ProductService) DeleteProduct(productID int) CustomError {
+func (s *ProductService) DeleteProduct(productID int) error {
 	if err := s.productRepository.DeleteProduct(productID); err != nil {
-		if err == sql.ErrNoRows {
-			return CustomError{
-				StatusCode: http.StatusNotFound,
-				Message:    "No product found with the given ID",
-				Err:        err,
-			}
-		}
 
-		return CustomError{
-			StatusCode: http.StatusInternalServerError,
-			Message:    "Something went wrong while deleting product",
-			Err:        err,
-		}
+		return err
 	}
 
-	return CustomError{}
+	return nil
 }

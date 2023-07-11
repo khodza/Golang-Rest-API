@@ -132,9 +132,6 @@ func (r *UserRepository) DeleteUser(userID int) error {
 	_, err := r.db.Exec(query, userID)
 
 	if err != nil {
-		if err == sql.ErrNoRows {
-			return custom_errors.ErrUserNotFound
-		}
 		return err
 	}
 

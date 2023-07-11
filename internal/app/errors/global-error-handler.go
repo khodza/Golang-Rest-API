@@ -28,15 +28,19 @@ func (h *GlobalErrorHandler) HandleErrors() gin.HandlerFunc {
 			message := "Internal Server Error"
 
 			for _, err := range c.Errors.Errors() {
-				if err == ErrEmailExist.Error() {
+				if err == ErrEmailExist.Error() || err == ErrProductCodeExist.Error() {
 					status = http.StatusConflict
-					message = "Email already exists"
+					message = err
 					break
 				}
-				if err == ErrUserNotFound.Error() {
+				if err == ErrUserNotFound.Error() || err == ErrProductNotFound.Error() || err == ErrOrderNotFound.Error() || err == ErrOrderItemsNotFound.Error() {
 					status = http.StatusNotFound
-					message = "User not found"
+					message = err
 					break
+				}
+				if err == ErrPaymentNotEqual.Error() {
+					status = http.StatusBadRequest
+					message = err
 				}
 				if IsValidationErr(err) {
 					status = http.StatusBadRequest

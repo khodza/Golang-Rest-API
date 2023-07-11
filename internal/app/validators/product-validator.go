@@ -2,6 +2,7 @@ package validators
 
 import (
 	"fmt"
+	custom_errors "khodza/rest-api/internal/app/errors"
 	"khodza/rest-api/internal/app/models"
 
 	"github.com/go-playground/validator/v10"
@@ -29,7 +30,7 @@ func (v *ProductValidator) ValidateProduct(product *models.Product) error {
 			validationErrors = append(validationErrors, fmt.Sprintf("%s is %s", err.Field(), err.Tag()))
 		}
 
-		return fmt.Errorf("validation failed: %v", validationErrors)
+		return fmt.Errorf("%e : %v", custom_errors.ErrValidation, validationErrors)
 	}
 
 	return nil

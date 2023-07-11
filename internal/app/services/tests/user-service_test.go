@@ -1,7 +1,6 @@
 package service_test
 
 import (
-	"errors"
 	custom_errors "khodza/rest-api/internal/app/errors"
 	"khodza/rest-api/internal/app/models"
 	"khodza/rest-api/internal/app/services"
@@ -98,7 +97,7 @@ func TestCreateUser_ValidationFailed(t *testing.T) {
 	mockValidator := mocks.NewMockUserValidatorInterface(ctrl)
 
 	// Set up expectations for the mock validator
-	mockValidator.EXPECT().ValidateUserCreate(gomock.Any()).Return(errors.New(custom_errors.ValidationErr))
+	mockValidator.EXPECT().ValidateUserCreate(gomock.Any()).Return(custom_errors.ErrValidation)
 
 	service := services.NewUserService(mockRepo, mockValidator)
 
@@ -159,14 +158,14 @@ func TestUserUpdate_ValidationFailed(t *testing.T) {
 	mockRepo := mocks.NewMockUserRepositoryInterface(ctrl)
 	mockValidator := mocks.NewMockUserValidatorInterface(ctrl)
 
-	mockValidator.EXPECT().ValidateUserUpdate(gomock.Any()).Return(errors.New(custom_errors.ValidationErr))
+	mockValidator.EXPECT().ValidateUserUpdate(gomock.Any()).Return(custom_errors.ErrValidation)
 
 	service := services.NewUserService(mockRepo, mockValidator)
 	user := models.User{Email: "dadfafgmail.com"}
 	updatedUser, err := service.UpdateUser(1, user)
 
 	assert.Error(t, err)
-	assert.Equal(t, custom_errors.ValidationErr, err.Error())
+	assert.Equal(t, custom_errors.ErrValidation, err)
 	assert.Equal(t, models.User{}, updatedUser)
 }
 

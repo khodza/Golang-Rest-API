@@ -22,10 +22,10 @@ func NewProductHandler(productService services.ProductServiceInterface, logger *
 }
 
 func (h *ProductHandler) GetProducts(c *gin.Context) {
-	products, CustomError := h.productService.GetProducts()
+	products, err := h.productService.GetProducts()
 
-	if CustomError.StatusCode != 0 {
-		SendCustomError(c, CustomError, "Failed to get products", h.logger)
+	if err != nil {
+		c.Error(err)
 		return
 	}
 
@@ -41,10 +41,10 @@ func (h *ProductHandler) CreateProduct(c *gin.Context) {
 		return
 	}
 
-	createdProduct, CustomError := h.productService.CreateProduct(product)
+	createdProduct, err := h.productService.CreateProduct(product)
 
-	if CustomError.StatusCode != 0 {
-		SendCustomError(c, CustomError, "Failed to create product", h.logger)
+	if err != nil {
+		c.Error(err)
 		return
 	}
 
@@ -60,10 +60,10 @@ func (h *ProductHandler) GetProduct(c *gin.Context) {
 		return
 	}
 
-	product, CustomError := h.productService.GetProduct(productID)
+	product, err := h.productService.GetProduct(productID)
 
-	if CustomError.StatusCode != 0 {
-		SendCustomError(c, CustomError, "Failed to get product", h.logger)
+	if err != nil {
+		c.Error(err)
 		return
 	}
 
@@ -84,9 +84,9 @@ func (h *ProductHandler) UpdateProduct(c *gin.Context) {
 		return
 	}
 
-	updatedProduct, CustomError := h.productService.UpdateProduct(productID, product)
-	if CustomError.StatusCode != 0 {
-		SendCustomError(c, CustomError, "Failed to update products", h.logger)
+	updatedProduct, err := h.productService.UpdateProduct(productID, product)
+	if err != nil {
+		c.Error(err)
 		return
 	}
 
@@ -101,8 +101,8 @@ func (h *ProductHandler) DeleteProduct(c *gin.Context) {
 	if err != nil {
 		return
 	}
-	if CustomError := h.productService.DeleteProduct(productID); CustomError.StatusCode != 0 {
-		SendCustomError(c, CustomError, "Failed to delete product", h.logger)
+	if err := h.productService.DeleteProduct(productID); err != nil {
+		c.Error(err)
 		return
 	}
 

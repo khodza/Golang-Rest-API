@@ -31,7 +31,7 @@ func (v *UserValidator) ValidateUserCreate(user *models.User) error {
 			validationErrors = append(validationErrors, fmt.Sprintf("%s is %s", err.Field(), err.Tag()))
 		}
 
-		return fmt.Errorf("%s %v", custom_errors.ValidationErr, validationErrors)
+		return fmt.Errorf("%e : %v", custom_errors.ErrValidation, validationErrors)
 	}
 
 	return nil
@@ -43,7 +43,7 @@ func (v *UserValidator) ValidateUserUpdate(user *models.User) error {
 	}
 	err := v.validate.Var(user.Email, "email")
 	if err != nil {
-		return fmt.Errorf("%s %s is %s", custom_errors.ValidationErr, "email", err.Error())
+		return fmt.Errorf("%e : %s is %s", custom_errors.ErrValidation, "email", err.Error())
 	}
 
 	return nil

@@ -1,13 +1,12 @@
 package services
 
 import (
-	"fmt"
+	custom_errors "khodza/rest-api/internal/app/errors"
 	"khodza/rest-api/internal/app/models"
-	"net/http"
 )
 
 type PaymentServiceInterface interface {
-	PerformPayment(payment models.Payment) (models.Order, CustomError)
+	PerformPayment(payment models.Payment) (models.Order, error)
 }
 type PaymentService struct {
 	orderService OrderServiceInterface
@@ -21,28 +20,20 @@ func NewPaymentService(
 	}
 }
 
-func (s *PaymentService) PerformPayment(payment models.Payment) (models.Order, CustomError) {
+func (s *PaymentService) PerformPayment(payment models.Payment) (models.Order, error) {
 
-	orderRes, errC := s.orderService.GetOrder(payment.OrderID)
-	if errC.StatusCode != 0 {
-		return models.Order{}, errC
+	orderRes, err := s.orderService.GetOrder(payment.OrderID)
+	if err != nil {
+		return models.Order{}, err
 	}
 
 	if payment.RetailPrice != orderRes.Order.RetailPrice {
-		return models.Order{}, CustomError{
-			StatusCode: http.StatusBadRequest,
-			Message:    "The provided cash less or more then needed",
-			Err:        fmt.Errorf("the provided cash less or more then needed"),
-		}
+		return models.Order{}, custom_errors.ErrPaymentNotEqual
 	}
 
 	updatedOrder, err := s.orderService.ChangeStatus(payment.OrderID, "paid")
 	if err != nil {
-		return models.Order{}, CustomError{
-			StatusCode: http.StatusInternalServerError,
-			Message:    "Error on changing status of order ",
-			Err:        err,
-		}
+		return models.Order{}, err
 	}
-	return updatedOrder, CustomError{}
+	return updatedOrder, err
 }

@@ -27,9 +27,9 @@ func (h *OrderHandler) CreateOrder(c *gin.Context) {
 		return
 	}
 
-	createdOrder, CustomError := h.orderService.CreateOrder(newOrder)
-	if CustomError.StatusCode != 0 {
-		SendCustomError(c, CustomError, "Failed to create order", h.logger)
+	createdOrder, err := h.orderService.CreateOrder(newOrder)
+	if err != nil {
+		c.Error(err)
 		return
 	}
 
@@ -45,9 +45,9 @@ func (h *OrderHandler) GetOrder(c *gin.Context) {
 		return
 	}
 
-	order, CustomError := h.orderService.GetOrder(orderID)
-	if CustomError.StatusCode != 0 {
-		SendCustomError(c, CustomError, "Failed to get order", h.logger)
+	order, err := h.orderService.GetOrder(orderID)
+	if err != nil {
+		c.Error(err)
 		return
 	}
 
@@ -58,9 +58,9 @@ func (h *OrderHandler) GetOrder(c *gin.Context) {
 }
 
 func (h *OrderHandler) GetOrders(c *gin.Context) {
-	orders, CustomError := h.orderService.GetOrders()
-	if CustomError.StatusCode != 0 {
-		SendCustomError(c, CustomError, "Failed to get orders", h.logger)
+	orders, err := h.orderService.GetOrders()
+	if err != nil {
+		c.Error(err)
 		return
 	}
 
@@ -76,9 +76,9 @@ func (h *OrderHandler) GetOrderItems(c *gin.Context) {
 		return
 	}
 
-	orderItems, CustomError := h.orderService.GetOrderItems(orderID)
-	if CustomError.StatusCode != 0 {
-		SendCustomError(c, CustomError, "Failed to get items", h.logger)
+	orderItems, err := h.orderService.GetOrderItems(orderID)
+	if err != nil {
+		c.Error(err)
 		return
 	}
 
@@ -99,9 +99,9 @@ func (h *OrderHandler) UpdateOrder(c *gin.Context) {
 		return
 	}
 
-	updatedOrder, CustomError := h.orderService.UpdateOrder(orderID, newOrder)
-	if CustomError.StatusCode != 0 {
-		SendCustomError(c, CustomError, "Failed to update order", h.logger)
+	updatedOrder, err := h.orderService.UpdateOrder(orderID, newOrder)
+	if err != nil {
+		c.Error(err)
 		return
 	}
 
@@ -117,9 +117,8 @@ func (h *OrderHandler) DeleteOrder(c *gin.Context) {
 		return
 	}
 
-	CustomError := h.orderService.DeleteOrder(orderID)
-	if CustomError.StatusCode != 0 {
-		SendCustomError(c, CustomError, "Failed to delete order", h.logger)
+	if err := h.orderService.DeleteOrder(orderID); err != nil {
+		c.Error(err)
 		return
 	}
 
@@ -130,9 +129,9 @@ func (h *OrderHandler) DeleteOrder(c *gin.Context) {
 }
 
 func (h *OrderHandler) GetPaidOrders(c *gin.Context) {
-	orders, CustomError := h.orderService.GetPaidOrders()
-	if CustomError.StatusCode != 0 {
-		SendCustomError(c, CustomError, "Failed to get paid orders", h.logger)
+	orders, err := h.orderService.GetPaidOrders()
+	if err != nil {
+		c.Error(err)
 		return
 	}
 

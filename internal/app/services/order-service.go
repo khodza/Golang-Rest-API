@@ -1,22 +1,20 @@
 package services
 
 import (
-	"database/sql"
 	"khodza/rest-api/internal/app/models"
 	"khodza/rest-api/internal/app/repositories"
-	"net/http"
 	"sync"
 )
 
 type OrderServiceInterface interface {
-	CreateOrder(newOrder models.OrderReq) (models.Order, CustomError)
-	GetOrder(orderID int) (models.OrderRes, CustomError)
-	GetOrders() (models.AllOrdersRes, CustomError)
-	UpdateOrder(orderID int, newOrder models.OrderReq) (models.Order, CustomError)
-	DeleteOrder(orderID int) CustomError
+	CreateOrder(newOrder models.OrderReq) (models.Order, error)
+	GetOrder(orderID int) (models.OrderRes, error)
+	GetOrders() (models.AllOrdersRes, error)
+	UpdateOrder(orderID int, newOrder models.OrderReq) (models.Order, error)
+	DeleteOrder(orderID int) error
 	ChangeStatus(orderID int, status string) (models.Order, error)
-	GetPaidOrders() (models.OrderPaid, CustomError)
-	GetOrderItems(orderId int) ([]models.OrderItem, CustomError)
+	GetPaidOrders() (models.OrderPaid, error)
+	GetOrderItems(orderId int) ([]models.OrderItem, error)
 }
 type OrderService struct {
 	orderRepository repositories.OrderRepositoryInterface
@@ -33,15 +31,11 @@ func NewOrderService(
 	}
 }
 
-func (s *OrderService) CreateOrder(newOrder models.OrderReq) (models.Order, CustomError) {
+func (s *OrderService) CreateOrder(newOrder models.OrderReq) (models.Order, error) {
 	//Start transaction
 	tx, err := s.orderRepository.BeginTransaction()
 	if err != nil {
-		return models.Order{}, CustomError{
-			StatusCode: http.StatusInternalServerError,
-			Message:    "Error starting transaction",
-			Err:        err,
-		}
+		return models.Order{}, err
 	}
 
 	//Rollback
@@ -62,9 +56,9 @@ func (s *OrderService) CreateOrder(newOrder models.OrderReq) (models.Order, Cust
 	var totalSupplyPrice float64
 	var totalRetailPrice float64
 	for i := 0; i < len(products); i++ {
-		product, CustomError := s.productService.GetProduct(products[i].ProductID)
-		if CustomError.StatusCode != 0 {
-			return models.Order{}, CustomError
+		product, err := s.productService.GetProduct(products[i].ProductID)
+		if err != nil {
+			return models.Order{}, err
 		}
 
 		totalSupplyPrice += product.SupplyPrice * float64(products[i].Quantity)
@@ -74,13 +68,9 @@ func (s *OrderService) CreateOrder(newOrder models.OrderReq) (models.Order, Cust
 	order.RetailPrice = totalSupplyPrice
 
 	//create order
-	orderID, err := s.orderRepository.CreateOrder(order, tx)
+	orderID, err := s.orderRepository.CreateOrder(tx, order)
 	if err != nil {
-		return models.Order{}, CustomError{
-			StatusCode: http.StatusInternalServerError,
-			Message:    "Error on creating order",
-			Err:        err,
-		}
+		return models.Order{}, err
 	}
 	order.ID = orderID
 
@@ -89,35 +79,18 @@ func (s *OrderService) CreateOrder(newOrder models.OrderReq) (models.Order, Cust
 		var orderItem models.OrderItem
 		orderItem.OrderID = orderID
 		orderItem.ProductID, orderItem.Quantity = products[i].ProductID, products[i].Quantity
-		_, err := s.orderRepository.CreateOrderItem(orderItem, tx)
+		_, err := s.orderRepository.CreateOrderItem(tx, orderItem)
 		if err != nil {
-			return models.Order{}, CustomError{
-				StatusCode: http.StatusInternalServerError,
-				Message:    "Error on creating order items",
-				Err:        err,
-			}
+			return models.Order{}, err
 		}
 	}
 
-	if err != nil {
-		return models.Order{}, CustomError{
-			StatusCode: http.StatusInternalServerError,
-			Message:    "Error committing transaction",
-			Err:        err,
-		}
-	}
-
-	return order, CustomError{}
+	return order, nil
 }
 
-type ChanelResult struct {
-	Order models.OrderRes
-	Error CustomError
-}
-
-func (s *OrderService) GetOrder(orderID int) (models.OrderRes, CustomError) {
+func (s *OrderService) GetOrder(orderID int) (models.OrderRes, error) {
 	var readyOrder models.OrderRes
-	var error CustomError
+	var errorAny error
 	//create chanel
 	orderCh := make(chan models.Order, 1)
 	orderItemsCh := make(chan []models.OrderItem, 1)
@@ -129,19 +102,7 @@ func (s *OrderService) GetOrder(orderID int) (models.OrderRes, CustomError) {
 		defer wg.Done()
 		order, err := s.orderRepository.GetOrder(orderID)
 		if err != nil {
-
-			if err == sql.ErrNoRows {
-				error = CustomError{
-					StatusCode: http.StatusNotFound,
-					Message:    "No order found with the given ID",
-					Err:        err,
-				}
-			}
-			error = CustomError{
-				StatusCode: http.StatusInternalServerError,
-				Message:    "Error on getting order",
-				Err:        err,
-			}
+			errorAny = err
 			return
 		}
 		orderCh <- order
@@ -151,11 +112,7 @@ func (s *OrderService) GetOrder(orderID int) (models.OrderRes, CustomError) {
 		defer wg.Done()
 		orderItems, err := s.orderRepository.GetOrderItems(orderID)
 		if err != nil {
-			error = CustomError{
-				StatusCode: http.StatusInternalServerError,
-				Message:    "Error on getting order items",
-				Err:        err,
-			}
+			errorAny = err
 			return
 		}
 		orderItemsCh <- orderItems
@@ -171,58 +128,46 @@ func (s *OrderService) GetOrder(orderID int) (models.OrderRes, CustomError) {
 	for orderItems := range orderItemsCh {
 		readyOrder.Products = orderItems
 	}
+	if errorAny != nil {
+		return models.OrderRes{}, errorAny
+	}
 
-	return readyOrder, error
+	return readyOrder, nil
 }
 
-func (s *OrderService) GetOrders() (models.AllOrdersRes, CustomError) {
+func (s *OrderService) GetOrders() (models.AllOrdersRes, error) {
 	var allOrderRes models.AllOrdersRes
 	orders, err := s.orderRepository.GetOrders("")
 	if err != nil {
-		return models.AllOrdersRes{}, CustomError{
-			StatusCode: http.StatusInternalServerError,
-			Message:    "Error on getting order",
-			Err:        err,
-		}
+		return models.AllOrdersRes{}, err
 	}
 
 	orderCount, err := s.orderRepository.GetOrdersCount()
 	if err != nil {
-		return models.AllOrdersRes{}, CustomError{
-			StatusCode: http.StatusInternalServerError,
-			Message:    "Error on getting order count",
-			Err:        err,
-		}
+		return models.AllOrdersRes{}, err
 	}
 
 	allOrderRes.Orders = orders
 	allOrderRes.Count = orderCount
 
-	return allOrderRes, CustomError{}
+	return allOrderRes, nil
 }
 
-func (s *OrderService) GetOrderItems(orderId int) ([]models.OrderItem, CustomError) {
+func (s *OrderService) GetOrderItems(orderId int) ([]models.OrderItem, error) {
 
 	orderItems, err := s.orderRepository.GetOrderItems(orderId)
 	if err != nil {
-		return []models.OrderItem{}, CustomError{
-			StatusCode: http.StatusInternalServerError,
-			Message:    "Error on getting orders items",
-		}
+		return []models.OrderItem{}, err
 	}
-	return orderItems, CustomError{}
+	return orderItems, err
 
 }
 
-func (s *OrderService) UpdateOrder(orderID int, newOrder models.OrderReq) (models.Order, CustomError) {
+func (s *OrderService) UpdateOrder(orderID int, newOrder models.OrderReq) (models.Order, error) {
 	tx, err := s.orderRepository.BeginTransaction()
 
 	if err != nil {
-		return models.Order{}, CustomError{
-			StatusCode: http.StatusInternalServerError,
-			Message:    "Error starting transaction",
-			Err:        err,
-		}
+		return models.Order{}, err
 	}
 
 	//Rollback
@@ -243,9 +188,9 @@ func (s *OrderService) UpdateOrder(orderID int, newOrder models.OrderReq) (model
 		var totalSupplyPrice float64
 		var totalRetailPrice float64
 		for i := 0; i < len(products); i++ {
-			product, CustomError := s.productService.GetProduct(products[i].ProductID)
-			if CustomError.StatusCode != 0 {
-				return models.Order{}, CustomError
+			product, err := s.productService.GetProduct(products[i].ProductID)
+			if err != nil {
+				return models.Order{}, err
 			}
 
 			totalSupplyPrice += product.SupplyPrice * float64(products[i].Quantity)
@@ -256,26 +201,18 @@ func (s *OrderService) UpdateOrder(orderID int, newOrder models.OrderReq) (model
 	}
 
 	//Updating user
-	updatedOrder, err := s.orderRepository.UpdateOrder(orderID, updatedOrderTemp, tx)
+	updatedOrder, err := s.orderRepository.UpdateOrder(tx, orderID, updatedOrderTemp)
 	if err != nil {
-		return models.Order{}, CustomError{
-			StatusCode: http.StatusInternalServerError,
-			Message:    "Error on updating order",
-			Err:        err,
-		}
+		return models.Order{}, err
 	}
 
 	//Update order items
 	if len(products) != 0 {
 		//delete items
 		var err error
-		err = s.orderRepository.DeleteOrderItems(orderID, tx)
+		err = s.orderRepository.DeleteOrderItems(tx, orderID)
 		if err != nil {
-			return models.Order{}, CustomError{
-				StatusCode: http.StatusInternalServerError,
-				Message:    "Error on updating (deleting old order items) ",
-				Err:        err,
-			}
+			return models.Order{}, err
 		}
 
 		for i := 0; i < len(products); i++ {
@@ -283,55 +220,42 @@ func (s *OrderService) UpdateOrder(orderID int, newOrder models.OrderReq) (model
 			var orderItem models.OrderItem
 			orderItem.OrderID = orderID
 			orderItem.ProductID, orderItem.Quantity = products[i].ProductID, products[i].Quantity
-			_, err = s.orderRepository.CreateOrderItem(orderItem, tx)
+			_, err = s.orderRepository.CreateOrderItem(tx, orderItem)
 			if err != nil {
-				return models.Order{}, CustomError{
-					StatusCode: http.StatusInternalServerError,
-					Message:    "Error on creating order items",
-					Err:        err,
-				}
+				return models.Order{}, err
 			}
 		}
 	}
 
-	return updatedOrder, CustomError{}
+	return updatedOrder, err
 
 }
 
-func (s *OrderService) DeleteOrder(orderID int) CustomError {
+func (s *OrderService) DeleteOrder(orderID int) error {
 	//delete order
 	err := s.orderRepository.DeleteOrder(orderID)
 	if err != nil {
-
-		return CustomError{
-			StatusCode: http.StatusInternalServerError,
-			Message:    "Error on deleting order",
-			Err:        err,
-		}
+		return err
 	}
 
-	return CustomError{}
+	return nil
 }
 
 func (s *OrderService) ChangeStatus(orderID int, status string) (models.Order, error) {
 	var order models.Order
 	order.Status = status
-	updatedOrder, err := s.orderRepository.UpdateOrder(orderID, order, nil)
+	updatedOrder, err := s.orderRepository.UpdateOrder(nil, orderID, order)
 	if err != nil {
 		return models.Order{}, err
 	}
 	return updatedOrder, nil
 }
 
-func (s *OrderService) GetPaidOrders() (models.OrderPaid, CustomError) {
+func (s *OrderService) GetPaidOrders() (models.OrderPaid, error) {
 	var paidOrders models.OrderPaid
 	allOrders, err := s.orderRepository.GetOrders("paid")
 	if err != nil {
-		return models.OrderPaid{}, CustomError{
-			StatusCode: http.StatusInternalServerError,
-			Message:    "Error on getting order",
-			Err:        err,
-		}
+		return models.OrderPaid{}, err
 	}
 
 	var retailPrices float64
@@ -345,5 +269,5 @@ func (s *OrderService) GetPaidOrders() (models.OrderPaid, CustomError) {
 	paidOrders.RetailPrices = retailPrices
 	paidOrders.SupplyPrices = supplyPrices
 
-	return paidOrders, CustomError{}
+	return paidOrders, err
 }

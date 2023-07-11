@@ -28,9 +28,9 @@ func (h *PaymentHandler) PerformPayment(c *gin.Context) {
 		return
 	}
 
-	updatedOrder, CustomError := h.paymentService.PerformPayment(payment)
-	if CustomError.StatusCode != 0 {
-		SendCustomError(c, CustomError, "Error on performing payment", h.logger)
+	updatedOrder, err := h.paymentService.PerformPayment(payment)
+	if err != nil {
+		c.Error(err)
 		return
 	}
 

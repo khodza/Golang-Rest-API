@@ -1,11 +1,14 @@
 package repositories
 
 import (
+	"database/sql"
 	"fmt"
+	custom_errors "khodza/rest-api/internal/app/errors"
 	"khodza/rest-api/internal/app/models"
 	"strings"
 
 	"github.com/jmoiron/sqlx"
+	"github.com/lib/pq"
 )
 
 type ProductRepositoryInterface interface {
@@ -40,6 +43,9 @@ func (r *ProductRepository) CreateProduct(product models.Product) (models.Produc
 	var createdProduct models.Product
 	err := r.db.Get(&createdProduct, query, product.Name, product.Barcode, product.SupplyPrice, product.RetailPrice, product.Description, product.Image)
 	if err != nil {
+		if pqErr, ok := err.(*pq.Error); ok && pqErr.Code == "23505" {
+			err = custom_errors.ErrProductCodeExist
+		}
 		return models.Product{}, err
 	}
 	return createdProduct, nil
@@ -50,6 +56,10 @@ func (r *ProductRepository) GetProduct(productID int) (models.Product, error) {
 	query := "SELECT * FROM products WHERE id = $1"
 	err := r.db.Get(&product, query, productID)
 	if err != nil {
+		//not found
+		if err == sql.ErrNoRows {
+			err = custom_errors.ErrProductNotFound
+		}
 		return models.Product{}, err
 	}
 	return product, nil
@@ -97,13 +107,10 @@ func (r *ProductRepository) UpdateProduct(productID int, product models.Product)
 	}
 
 	if len(params) == 0 {
-		var updatedProduct models.Product
-		getQuery := "SELECT * FROM products WHERE id = $1"
-		err := r.db.Get(&updatedProduct, getQuery, productID)
+		updatedProduct, err := r.GetProduct(productID)
 		if err != nil {
 			return models.Product{}, err
 		}
-
 		return updatedProduct, nil
 	}
 
@@ -117,16 +124,22 @@ func (r *ProductRepository) UpdateProduct(productID int, product models.Product)
 
 	_, err := r.db.Exec(updateQuery, params...)
 	if err != nil {
+		//duplicate error
+		pqErr, _ := err.(*pq.Error)
+		if pqErr.Code == "23505" {
+			err = custom_errors.ErrProductCodeExist
+		}
+		//not found
+		if err == sql.ErrNoRows {
+			err = custom_errors.ErrProductNotFound
+		}
 		return models.Product{}, err
 	}
-
-	var updatedProduct models.Product
-	getQuery := "SELECT * FROM products WHERE id = $1"
-	err = r.db.Get(&updatedProduct, getQuery, productID)
+	// Retrieve the updated product from the database
+	updatedProduct, err := r.GetProduct(productID)
 	if err != nil {
 		return models.Product{}, err
 	}
-
 	return updatedProduct, nil
 }
 
