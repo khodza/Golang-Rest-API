@@ -2,6 +2,7 @@ package dependencies
 
 import (
 	"fmt"
+	custom_errors "khodza/rest-api/internal/app/errors"
 	"khodza/rest-api/internal/app/handlers"
 	"khodza/rest-api/internal/app/repositories"
 	"khodza/rest-api/internal/app/services"
@@ -12,16 +13,16 @@ import (
 	"go.uber.org/zap"
 )
 
-func InitDependencies() (map[string]interface{}, *zap.Logger, error) {
+func InitDependencies() (*custom_errors.GlobalErrorHandler, map[string]interface{}, *zap.Logger, error) {
 	// INITIALIZE LOGGER
 	logger, err := logger.CreateLogger()
 	if err != nil {
-		return nil, nil, fmt.Errorf("error on initializing logger")
+		return nil, nil, nil, fmt.Errorf("error on initializing logger")
 	}
 	// Get the DB instance
 	db := database.GetDB()
 	if db == nil {
-		return nil, nil, fmt.Errorf("error on getting db instance")
+		return nil, nil, nil, fmt.Errorf("error on getting db instance")
 	}
 
 	// INITIALIZE REPOSITORIES
@@ -45,6 +46,9 @@ func InitDependencies() (map[string]interface{}, *zap.Logger, error) {
 	orderHandler := handlers.NewOrderHandler(orderService, logger)
 	paymentHandler := handlers.NewPaymentHandler(paymentService, logger)
 
+	//INITIALIZE Global Error Handler
+	globalErrorHandler := custom_errors.NewGlobalErrorHandler(logger)
+
 	handlersMap := map[string]interface{}{
 		"users":    userHandler,
 		"products": productHandler,
@@ -52,5 +56,5 @@ func InitDependencies() (map[string]interface{}, *zap.Logger, error) {
 		"payments": paymentHandler,
 	}
 
-	return handlersMap, logger, nil
+	return globalErrorHandler, handlersMap, logger, nil
 }

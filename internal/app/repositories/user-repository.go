@@ -1,11 +1,14 @@
 package repositories
 
 import (
+	"database/sql"
 	"fmt"
+	custom_errors "khodza/rest-api/internal/app/errors"
 	"khodza/rest-api/internal/app/models"
 	"strings"
 
 	"github.com/jmoiron/sqlx"
+	"github.com/lib/pq"
 )
 
 type UserRepositoryInterface interface {
@@ -40,17 +43,23 @@ func (r *UserRepository) CreateUser(user models.User) (models.User, error) {
 	var createdUser models.User
 	err := r.db.Get(&createdUser, query, user.Username, user.Email)
 	if err != nil {
+		if pqErr, ok := err.(*pq.Error); ok && pqErr.Code == "23505" {
+			err = custom_errors.ErrEmailExist
+		}
 		return models.User{}, err
 	}
 	return createdUser, nil
 }
 
 func (r *UserRepository) GetUser(userID int) (models.User, error) {
-
 	var user models.User
 	query := "SELECT * FROM users WHERE id = $1"
 	err := r.db.Get(&user, query, userID)
 	if err != nil {
+		//not found
+		if err == sql.ErrNoRows {
+			err = custom_errors.ErrUserNotFound
+		}
 		return models.User{}, err
 	}
 	return user, nil
@@ -81,10 +90,8 @@ func (r *UserRepository) UpdateUser(userID int, user models.User) (models.User, 
 	updateQuery = strings.TrimSuffix(updateQuery, ",")
 
 	if len(params) == 0 {
-		// Retrieve the updated user from the database
-		var updatedUser models.User
-		getQuery := "SELECT * FROM users WHERE id = $1"
-		err := r.db.Get(&updatedUser, getQuery, userID)
+		// Retrieve the  user if nothing to update
+		updatedUser, err := r.GetUser(userID)
 		if err != nil {
 			return models.User{}, err
 		}
@@ -95,16 +102,23 @@ func (r *UserRepository) UpdateUser(userID int, user models.User) (models.User, 
 	updateQuery += fmt.Sprintf(" WHERE id = $%d", paramCount)
 	params = append(params, userID)
 
-	//executing query
+	//executing update query
 	_, err := r.db.Exec(updateQuery, params...)
 	if err != nil {
+		//duplicate error
+		pqErr, _ := err.(*pq.Error)
+		if pqErr.Code == "23505" {
+			err = custom_errors.ErrEmailExist
+		}
+		//not found
+		if err == sql.ErrNoRows {
+			err = custom_errors.ErrUserNotFound
+		}
 		return models.User{}, err
 	}
 
 	// Retrieve the updated user from the database
-	var updatedUser models.User
-	getQuery := "SELECT * FROM users WHERE id = $1"
-	err = r.db.Get(&updatedUser, getQuery, userID)
+	updatedUser, err := r.GetUser(userID)
 	if err != nil {
 		return models.User{}, err
 	}
@@ -118,16 +132,11 @@ func (r *UserRepository) DeleteUser(userID int) error {
 	_, err := r.db.Exec(query, userID)
 
 	if err != nil {
+		if err == sql.ErrNoRows {
+			return custom_errors.ErrUserNotFound
+		}
 		return err
 	}
-	// _=result
-	// rowsAffected, err := result.RowsAffected()
-	// if err != nil {
-	// 	return err
-	// }
 
-	// if rowsAffected == 0 {
-	// 	return fmt.Errorf("user with given ID not found")
-	// }
 	return nil
 }

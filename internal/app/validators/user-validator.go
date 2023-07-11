@@ -2,6 +2,7 @@ package validators
 
 import (
 	"fmt"
+	custom_errors "khodza/rest-api/internal/app/errors"
 	"khodza/rest-api/internal/app/models"
 
 	"github.com/go-playground/validator/v10"
@@ -30,7 +31,7 @@ func (v *UserValidator) ValidateUserCreate(user *models.User) error {
 			validationErrors = append(validationErrors, fmt.Sprintf("%s is %s", err.Field(), err.Tag()))
 		}
 
-		return fmt.Errorf("validation failed: %v", validationErrors)
+		return fmt.Errorf("%s %v", custom_errors.ValidationErr, validationErrors)
 	}
 
 	return nil
@@ -42,7 +43,7 @@ func (v *UserValidator) ValidateUserUpdate(user *models.User) error {
 	}
 	err := v.validate.Var(user.Email, "email")
 	if err != nil {
-		return fmt.Errorf("validation failed: %s is %s", "email", err.Error())
+		return fmt.Errorf("%s %s is %s", custom_errors.ValidationErr, "email", err.Error())
 	}
 
 	return nil

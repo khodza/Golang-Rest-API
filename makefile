@@ -33,5 +33,16 @@ to-database:
 	psql -h $(POSTGRES_HOST) -p $(POSTGRES_PORT) -U $(POSTGRES_USER) -d $(POSTGRES_DB)
 
 
+
+mockgen-user-repository:
+	mockgen -source=internal/app/repositories/user-repository.go -destination=internal/app/services/mocks/mock_user_repository.go -package=mocks
+
+mockgen-user-validator:
+	mockgen -source=internal/app/validators/user-validator.go -destination=internal/app/services/mocks/mock_user_validator.go -package=mocks
+
+
+test-services:
+	go test ./internal/app/services/tests
+
 run:
 	go run cmd/main.go

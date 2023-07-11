@@ -22,10 +22,10 @@ func NewUserHandler(userService services.UserServiceInterface, logger *zap.Logge
 }
 
 func (h *UserHandler) GetUsers(c *gin.Context) {
-	users, CustomError := h.userService.GetUsers()
+	users, err := h.userService.GetUsers()
 
-	if CustomError.StatusCode != 0 {
-		SendCustomError(c, CustomError, "Failed to get users", h.logger)
+	if err != nil {
+		c.Error(err)
 		return
 	}
 
@@ -41,10 +41,10 @@ func (h *UserHandler) CreateUser(c *gin.Context) {
 		return
 	}
 
-	createdUser, CustomError := h.userService.CreateUser(user)
+	createdUser, err := h.userService.CreateUser(user)
 
-	if CustomError.StatusCode != 0 {
-		SendCustomError(c, CustomError, "Failed to create user", h.logger)
+	if err != nil {
+		c.Error(err)
 		return
 	}
 
@@ -60,10 +60,10 @@ func (h *UserHandler) GetUser(c *gin.Context) {
 		return
 	}
 
-	user, CustomError := h.userService.GetUser(userID)
+	user, err := h.userService.GetUser(userID)
 
-	if CustomError.StatusCode != 0 {
-		SendCustomError(c, CustomError, "Failed to get user", h.logger)
+	if err != nil {
+		c.Error(err)
 		return
 	}
 
@@ -84,10 +84,10 @@ func (h *UserHandler) UpdateUser(c *gin.Context) {
 		return
 	}
 
-	updatedUser, CustomError := h.userService.UpdateUser(userID, user)
+	updatedUser, err := h.userService.UpdateUser(userID, user)
 
-	if CustomError.StatusCode != 0 {
-		SendCustomError(c, CustomError, "Failed to update user", h.logger)
+	if err != nil {
+		c.Error(err)
 		return
 	}
 
@@ -103,8 +103,8 @@ func (h *UserHandler) DeleteUser(c *gin.Context) {
 		return
 	}
 
-	if CustomError := h.userService.DeleteUser(userID); CustomError.StatusCode != 0 {
-		SendCustomError(c, CustomError, "Failed to delete user", h.logger)
+	if err := h.userService.DeleteUser(userID); err != nil {
+		c.Error(err)
 		return
 	}
 

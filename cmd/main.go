@@ -24,12 +24,14 @@ func main() {
 	}
 
 	// Initialize dependencies
-	handlersMap, logger, err := dependencies.InitDependencies()
+	globalErrorHandler, handlersMap, logger, err := dependencies.InitDependencies()
 	if err != nil {
 		fmt.Println("Failed to initialize dependencies")
 	}
 	// Initialize Gin router
 	router := gin.Default()
+	// Define the global error handler middleware
+	router.Use(globalErrorHandler.HandleErrors())
 
 	// Connect routers to handlers
 	routers.ConnectRoutersToHandlers(router, handlersMap)
