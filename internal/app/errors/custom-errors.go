@@ -26,3 +26,10 @@ var ErrValidation = errors.New("validation failed")
 func IsValidationErr(err string) bool {
 	return strings.HasPrefix(err, ErrValidation.Error())
 }
+
+// testing errors
+var (
+	ErrCreateOrder = errors.New("unknown error in creating order")
+)
+
+var ErrCreateOrderItems = errors.New("unknown error in creating order items")

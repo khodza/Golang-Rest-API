@@ -56,7 +56,8 @@ func (s *OrderService) CreateOrder(newOrder models.OrderReq) (models.Order, erro
 	var totalSupplyPrice float64
 	var totalRetailPrice float64
 	for i := 0; i < len(products); i++ {
-		product, err := s.productService.GetProduct(products[i].ProductID)
+		var product models.Product
+		product, err = s.productService.GetProduct(products[i].ProductID)
 		if err != nil {
 			return models.Order{}, err
 		}
@@ -73,13 +74,13 @@ func (s *OrderService) CreateOrder(newOrder models.OrderReq) (models.Order, erro
 		return models.Order{}, err
 	}
 	order.ID = orderID
-
 	//create order items
+
 	for i := 0; i < len(products); i++ {
 		var orderItem models.OrderItem
 		orderItem.OrderID = orderID
 		orderItem.ProductID, orderItem.Quantity = products[i].ProductID, products[i].Quantity
-		_, err := s.orderRepository.CreateOrderItem(tx, orderItem)
+		_, err = s.orderRepository.CreateOrderItem(tx, orderItem)
 		if err != nil {
 			return models.Order{}, err
 		}
